@@ -1,6 +1,6 @@
 # recurso-node
 
-Official Node.js SDK for the [Recurso](https://github.com/recurso-dev/recurso) billing API — 17 resources, 64 methods covering plans, customers, the full subscription lifecycle, invoices, usage events, quotes, entitlements, webhooks (including delivery tracking and redelivery), analytics, and more. Every method is covered by the vitest suite in `test/` (`npm test`).
+Official Node.js SDK for the [Recurso](https://github.com/recurso-dev/recurso) billing API — 18 resources, 72 methods covering plans, customers, the full subscription lifecycle, invoices, usage-based billing (billable metrics, plan charges, live usage-amount preview), quotes, entitlements, webhooks (including delivery tracking and redelivery), analytics, and more. Every method is covered by the vitest suite in `test/` (`npm test`).
 
 Published on npm as [`recurso`](https://www.npmjs.com/package/recurso):
 

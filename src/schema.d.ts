@@ -1801,6 +1801,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/india/gstr3b": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * GSTR-3B summary return for a tax period
+         * @description Assembles the GSTR-3B self-declared summary from the same period inputs as GSTR-1 (finalized invoices and refund credit notes), so the two returns are consistent by construction. Table 3.1(a) outward supplies are net of the period's credit notes; Table 3.2 reports inter-state supplies to unregistered persons per place of supply. Purchase-side sections (inward reverse charge, ITC) are emitted as zeros — the billing engine holds no purchase data; the taxpayer/CA completes them before filing. Returns readable sections plus a `gov_schema` object in the GSTN GSTR-3B JSON shape (official field names, amounts in rupees).
+         */
+        get: operations["getGSTR3B"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/settings/gst": {
         parameters: {
             query?: never;
@@ -2778,6 +2798,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/billable-metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List billable metrics */
+        get: operations["listBillableMetrics"];
+        put?: never;
+        /**
+         * Create a billable metric
+         * @description A metric is a tenant-defined meter over usage events; its `code` doubles as the event `dimension` it aggregates. Aggregations: `count`, `sum`, `max`, `unique` (distinct values of the event property named by `field_name`).
+         */
+        post: operations["createBillableMetric"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billable-metrics/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch a billable metric */
+        get: operations["getBillableMetric"];
+        /**
+         * Update a billable metric
+         * @description `code` is immutable — it is the metric's identity link to recorded events.
+         */
+        put: operations["updateBillableMetric"];
+        post?: never;
+        /** Delete a billable metric */
+        delete: operations["deleteBillableMetric"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/plans/{id}/charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a plan's usage charges */
+        get: operations["getPlanCharges"];
+        /**
+         * Replace a plan's usage charge set
+         * @description Full replacement (like entitlements) — charges absent from the request are removed. Flat subscription fees stay on the plan's prices; a plan holding both is hybrid: flat fee billed in advance, usage billed in arrears at period close.
+         */
+        put: operations["setPlanCharges"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/subscriptions/{id}/usage-amount": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live usage-amount preview
+         * @description What the subscription's current-period usage would rate to if invoiced now — per charge, aggregated over [current_period_start, now) and priced with the plan's charge models. Amounts are minor currency units.
+         */
+        get: operations["getSubscriptionUsageAmount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/customers/{id}/entitlements": {
         parameters: {
             query?: never;
@@ -3418,6 +3522,115 @@ export interface components {
             bool_value?: boolean;
             /** Format: int64 */
             limit_value?: number;
+        };
+        /** @description A tenant-defined meter over usage events; `code` equals the event `dimension` it aggregates and is unique per tenant. */
+        BillableMetric: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            tenant_id?: string;
+            name?: string;
+            code?: string;
+            /** @enum {string} */
+            aggregation_type?: "count" | "sum" | "max" | "unique";
+            /** @description Event property counted by the `unique` aggregation. */
+            field_name?: string;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        BillableMetricInput: {
+            name: string;
+            /** @description Doubles as the usage event dimension; immutable after create. */
+            code: string;
+            /** @enum {string} */
+            aggregation_type: "count" | "sum" | "max" | "unique";
+            /** @description Required for `unique`, forbidden otherwise. */
+            field_name?: string;
+        };
+        ChargeTier: {
+            /**
+             * Format: int64
+             * @description Inclusive upper unit bound; null = unbounded (last tier only).
+             */
+            up_to: number | null;
+            /** @description Per-unit rate as a decimal string in MAJOR currency units (e.g. "0.0035"). */
+            unit_amount: string;
+            /**
+             * Format: int64
+             * @description Minor units, added once when any unit lands in the tier.
+             */
+            flat_amount?: number;
+        };
+        /** @description Pricing properties for one currency; fields depend on the charge model. */
+        ChargeAmounts: {
+            /** @description (per_unit) decimal-string rate in MAJOR currency units. */
+            unit_amount?: string;
+            /**
+             * Format: int64
+             * @description (package) price in minor units per bundle.
+             */
+            package_amount?: number;
+            /**
+             * Format: int64
+             * @description (package) units per bundle; partial bundles round up.
+             */
+            package_size?: number;
+            /** @description (graduated/volume) price bands. */
+            tiers?: components["schemas"]["ChargeTier"][];
+        };
+        /** @description Usage pricing for one billable metric on a plan. Usage is billed in arrears at period close; flat plan prices stay on the plan. */
+        Charge: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            plan_id?: string;
+            /** Format: uuid */
+            metric_id?: string;
+            /** @enum {string} */
+            charge_model?: "per_unit" | "graduated" | "volume" | "package";
+            /** @description Pricing per ISO currency code. */
+            amounts?: {
+                [key: string]: components["schemas"]["ChargeAmounts"];
+            };
+            hsn_code?: string;
+            metric?: components["schemas"]["BillableMetric"];
+        };
+        ChargeInput: {
+            /** Format: uuid */
+            metric_id: string;
+            /** @enum {string} */
+            charge_model: "per_unit" | "graduated" | "volume" | "package";
+            amounts: {
+                [key: string]: components["schemas"]["ChargeAmounts"];
+            };
+            hsn_code?: string;
+        };
+        /** @description Live preview of the current period's usage priced as of now. */
+        UsageAmount: {
+            /** Format: uuid */
+            subscription_id?: string;
+            currency?: string;
+            /** Format: date-time */
+            current_period_start?: string;
+            /** Format: date-time */
+            as_of?: string;
+            charges?: {
+                metric_code?: string;
+                metric_name?: string;
+                aggregation_type?: string;
+                charge_model?: string;
+                /** Format: int64 */
+                quantity?: number;
+                /**
+                 * Format: int64
+                 * @description Minor currency units.
+                 */
+                amount?: number;
+            }[];
+            /** Format: int64 */
+            total_amount?: number;
         };
         /** @description Read-only proration breakdown for a subscription plan change. Monetary fields are in the currency's smallest unit (e.g. paise/cents). */
         PlanChangePreview: {
@@ -4380,6 +4593,11 @@ export interface components {
             payment_type?: "bank_transfer" | "cash" | "cheque";
             /** Format: int64 */
             amount?: number;
+            /**
+             * Format: int64
+             * @description Tax deducted at source by the customer on this receipt.
+             */
+            tds_amount?: number;
             currency?: string;
             reference_number?: string;
             notes?: string;
@@ -5977,6 +6195,10 @@ export interface operations {
                     dimension: string;
                     /** Format: int64 */
                     quantity: number;
+                    /** @description Optional free-form attributes (max 20; keys ≤100 chars, values ≤255). The `unique` billable-metric aggregation counts distinct values of one property. */
+                    properties?: {
+                        [key: string]: string;
+                    };
                 };
             };
         };
@@ -7944,6 +8166,38 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    getGSTR3B: {
+        parameters: {
+            query: {
+                /** @description Calendar month of the tax period. */
+                month: number;
+                /** @description Year of the tax period. */
+                year: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The GSTR-3B return, readable and in government JSON shape. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Readable GSTR-3B sections (amounts in minor units). */
+                        data?: Record<string, never>;
+                        /** @description GSTN GSTR-3B upload JSON (official field names, amounts in rupees). */
+                        gov_schema?: Record<string, never>;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     getGSTConfig: {
         parameters: {
             query?: never;
@@ -8824,6 +9078,12 @@ export interface operations {
                      * @description Amount in the lowest currency unit.
                      */
                     amount: number;
+                    /**
+                     * Format: int64
+                     * @description Tax deducted at source by the customer (India B2B), in the lowest currency unit. Requires invoice_id; counts toward settling the invoice and is booked to TDS Receivable in the ledger, but is not part of the cash received. The deduction cannot exceed the invoice's outstanding balance.
+                     * @default 0
+                     */
+                    tds_amount?: number;
                     /** @default INR */
                     currency?: string;
                     reference_number?: string;
@@ -10015,6 +10275,233 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listBillableMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tenant's metrics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["BillableMetric"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createBillableMetric: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BillableMetricInput"];
+            };
+        };
+        responses: {
+            /** @description The created metric */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["BillableMetric"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description A metric with this code already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getBillableMetric: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The metric */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["BillableMetric"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateBillableMetric: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BillableMetricInput"];
+            };
+        };
+        responses: {
+            /** @description The updated metric */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["BillableMetric"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteBillableMetric: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description The metric is referenced by a plan charge. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getPlanCharges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The plan's charges with metrics joined */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Charge"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setPlanCharges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChargeInput"][];
+            };
+        };
+        responses: {
+            /** @description The stored charge set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Charge"][];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getSubscriptionUsageAmount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-charge quantities and priced amounts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["UsageAmount"];
+                    };
+                };
+            };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };

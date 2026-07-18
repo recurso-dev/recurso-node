@@ -74,6 +74,11 @@ export type LedgerTransaction = Schemas['LedgerTransaction'];
 export type ChurnScoreResult = Schemas['ChurnScoreResult'];
 export type Consent = Schemas['Consent'];
 export type Tenant = Schemas['Tenant'];
+export type BillableMetric = Schemas['BillableMetric'];
+export type Charge = Schemas['Charge'];
+export type ChargeAmounts = Schemas['ChargeAmounts'];
+export type ChargeTier = Schemas['ChargeTier'];
+export type UsageAmount = Schemas['UsageAmount'];
 
 /** The JSON body of an operation's success (2xx) response, per the spec. */
 type SuccessJson<O> = O extends { responses: infer R }
@@ -147,6 +152,35 @@ export interface UsageEventInput {
     customer_id: string;
     dimension: string;
     quantity: number;
+    /**
+     * Optional free-form attributes (max 20; keys ≤100 chars, values ≤255).
+     * The `unique` billable-metric aggregation counts distinct values of one
+     * property (e.g. active users by `user_id`).
+     */
+    properties?: Record<string, string>;
+}
+
+/** Payload for creating or updating a billable metric. */
+export interface BillableMetricInput {
+    name: string;
+    /** Doubles as the usage event dimension; immutable after create. */
+    code: string;
+    aggregation_type: 'count' | 'sum' | 'max' | 'unique';
+    /** Required for `unique` (the event property to count), forbidden otherwise. */
+    field_name?: string;
+}
+
+/** One usage charge in a plan's charge set (PUT replace semantics). */
+export interface ChargeInput {
+    metric_id: string;
+    charge_model: 'per_unit' | 'graduated' | 'volume' | 'package';
+    /**
+     * Pricing per ISO currency code. Rates (`unit_amount`) are decimal
+     * strings in MAJOR currency units (e.g. "0.0035"); package/flat amounts
+     * are integers in minor units.
+     */
+    amounts: Record<string, ChargeAmounts>;
+    hsn_code?: string;
 }
 
 /** Query parameters for the time-windowed usage endpoint. */
@@ -255,6 +289,16 @@ export class Recurso {
         create: (data: PlanInput) =>
             this.post<Res<'createPlan'>>('/v1/plans', { interval_count: 1, ...data }),
         list: (params?: ListParams) => this.get<Res<'listPlans'>>('/v1/plans', params),
+        /**
+         * Replace a plan's full usage-charge set (PUT semantics: charges
+         * absent from the list are removed). Flat plan prices are untouched —
+         * a plan holding both is hybrid: flat fee in advance, usage in
+         * arrears on the same renewal invoice.
+         */
+        setCharges: (planId: string, charges: ChargeInput[]) =>
+            this.put<Res<'setPlanCharges'>>(`/v1/plans/${planId}/charges`, charges),
+        getCharges: (planId: string) =>
+            this.get<Res<'getPlanCharges'>>(`/v1/plans/${planId}/charges`),
     };
 
     public subscriptions = {
@@ -286,6 +330,12 @@ export class Recurso {
          */
         usage: (id: string) =>
             this.get<Res<'getSubscriptionUsage'>>(`/v1/subscriptions/${id}/usage`),
+        /**
+         * Live usage-amount preview: what the current period's metered usage
+         * would rate to if invoiced now, per charge, in minor currency units.
+         */
+        usageAmount: (id: string) =>
+            this.get<Res<'getSubscriptionUsageAmount'>>(`/v1/subscriptions/${id}/usage-amount`),
     };
 
     public invoices = {
@@ -318,6 +368,24 @@ export class Recurso {
         query: (params: UsageQueryParams) => this.get<Res<'queryUsage'>>('/v1/usage', params),
         /** The tenant's dimension catalog with first/last seen and event counts. */
         dimensions: () => this.get<Res<'listUsageDimensions'>>('/v1/usage/dimensions'),
+    };
+
+    public billableMetrics = {
+        /**
+         * Create a tenant-defined meter over usage events. `code` doubles as
+         * the event dimension it aggregates (count | sum | max | unique).
+         */
+        create: (data: BillableMetricInput) =>
+            this.post<Res<'createBillableMetric'>>('/v1/billable-metrics', data),
+        list: () => this.get<Res<'listBillableMetrics'>>('/v1/billable-metrics'),
+        get: (id: string) =>
+            this.get<Res<'getBillableMetric'>>(`/v1/billable-metrics/${id}`),
+        /** Update name/aggregation/field. `code` is immutable. */
+        update: (id: string, data: BillableMetricInput) =>
+            this.put<Res<'updateBillableMetric'>>(`/v1/billable-metrics/${id}`, data),
+        /** Delete a metric (409 while a plan charge references it). */
+        delete: (id: string) =>
+            this.del<Res<'deleteBillableMetric'>>(`/v1/billable-metrics/${id}`),
     };
 
     public creditNotes = {

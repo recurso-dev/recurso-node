@@ -98,6 +98,17 @@ const cases: Record<string, MethodCase[]> = {
             body: { name: 'Pro', code: 'PRO', amount: 2900, currency: 'USD', interval_unit: 'month', interval_count: 3 },
         },
         { method: 'list', call: (r) => r.plans.list(listParams), verb: 'get', path: '/v1/plans', params: listParams },
+        {
+            method: 'setCharges',
+            call: (r) =>
+                r.plans.setCharges('plan_1', [
+                    { metric_id: 'bm_1', charge_model: 'per_unit', amounts: { INR: { unit_amount: '0.0035' } } },
+                ]),
+            verb: 'put',
+            path: '/v1/plans/plan_1/charges',
+            body: [{ metric_id: 'bm_1', charge_model: 'per_unit', amounts: { INR: { unit_amount: '0.0035' } } }],
+        },
+        { method: 'getCharges', call: (r) => r.plans.getCharges('plan_1'), verb: 'get', path: '/v1/plans/plan_1/charges' },
     ],
 
     subscriptions: [
@@ -147,6 +158,12 @@ const cases: Record<string, MethodCase[]> = {
             body,
         },
         { method: 'usage', call: (r) => r.subscriptions.usage('sub_1'), verb: 'get', path: '/v1/subscriptions/sub_1/usage' },
+        {
+            method: 'usageAmount',
+            call: (r) => r.subscriptions.usageAmount('sub_1'),
+            verb: 'get',
+            path: '/v1/subscriptions/sub_1/usage-amount',
+        },
     ],
 
     invoices: [
@@ -207,6 +224,46 @@ const cases: Record<string, MethodCase[]> = {
             },
         },
         { method: 'dimensions', call: (r) => r.usage.dimensions(), verb: 'get', path: '/v1/usage/dimensions' },
+        {
+            method: 'record (with properties)',
+            call: (r) =>
+                r.usage.record({
+                    subscription_id: 'sub_1',
+                    customer_id: 'cus_1',
+                    dimension: 'active_users',
+                    quantity: 1,
+                    properties: { user_id: 'u_42' },
+                }),
+            verb: 'post',
+            path: '/v1/usage/events',
+            body: {
+                subscription_id: 'sub_1',
+                customer_id: 'cus_1',
+                dimension: 'active_users',
+                quantity: 1,
+                properties: { user_id: 'u_42' },
+            },
+        },
+    ],
+
+    billableMetrics: [
+        {
+            method: 'create',
+            call: (r) => r.billableMetrics.create({ name: 'API calls', code: 'api_calls', aggregation_type: 'sum' }),
+            verb: 'post',
+            path: '/v1/billable-metrics',
+            body: { name: 'API calls', code: 'api_calls', aggregation_type: 'sum' },
+        },
+        { method: 'list', call: (r) => r.billableMetrics.list(), verb: 'get', path: '/v1/billable-metrics' },
+        { method: 'get', call: (r) => r.billableMetrics.get('bm_1'), verb: 'get', path: '/v1/billable-metrics/bm_1' },
+        {
+            method: 'update',
+            call: (r) => r.billableMetrics.update('bm_1', { name: 'API calls v2', code: 'api_calls', aggregation_type: 'max' }),
+            verb: 'put',
+            path: '/v1/billable-metrics/bm_1',
+            body: { name: 'API calls v2', code: 'api_calls', aggregation_type: 'max' },
+        },
+        { method: 'delete', call: (r) => r.billableMetrics.delete('bm_1'), verb: 'delete', path: '/v1/billable-metrics/bm_1' },
     ],
 
     creditNotes: [
@@ -484,7 +541,9 @@ describe('API surface completeness', () => {
 
         const tested: Record<string, string[]> = {};
         for (const [resource, methods] of Object.entries(cases)) {
-            tested[resource] = methods.map((m) => m.method).sort();
+            // A method may appear more than once with a " (variant)" suffix
+            // (e.g. "record (with properties)"); count the base name once.
+            tested[resource] = [...new Set(methods.map((m) => m.method.split(' (')[0]))].sort();
         }
         // pdfUrl is covered by its own dedicated (non-HTTP) test.
         tested.invoices = [...tested.invoices, 'pdfUrl'].sort();
