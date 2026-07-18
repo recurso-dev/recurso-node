@@ -2,19 +2,16 @@
 
 Official Node.js SDK for the [Recurso](https://github.com/recurso-dev/recurso) billing API — 17 resources, 64 methods covering plans, customers, the full subscription lifecycle, invoices, usage events, quotes, entitlements, webhooks (including delivery tracking and redelivery), analytics, and more. Every method is covered by the vitest suite in `test/` (`npm test`).
 
-> Not yet published to npm. Install from the repository for now:
+Published on npm as [`recurso`](https://www.npmjs.com/package/recurso):
 
 ```bash
-git clone https://github.com/recurso-dev/recurso-node.git
-cd recurso-node
-npm install && npm run build
-npm link   # or npm pack and install the tarball
+npm install recurso
 ```
 
 ## Usage
 
 ```typescript
-import { Recurso } from 'recurso-node';
+import { Recurso } from 'recurso';
 
 const recurso = new Recurso('sk_live_your_api_key', 'https://billing.example.com');
 
@@ -59,7 +56,7 @@ sub.current_period_end; // string | undefined — typed, autocompleted
 Resource types are exported for annotating your own code:
 
 ```typescript
-import type { Subscription, Customer, Invoice } from 'recurso-node';
+import type { Subscription, Customer, Invoice } from 'recurso';
 ```
 
 ### Keeping types in sync (maintainers)

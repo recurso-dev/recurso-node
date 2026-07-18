@@ -1,5 +1,5 @@
 {
-    "name": "recurso-node",
+    "name": "recurso",
     "version": "1.2.0",
     "description": "Official Node.js SDK for Recurso Billing",
     "main": "dist/index.js",
