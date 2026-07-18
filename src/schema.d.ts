@@ -619,6 +619,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/usage/events/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record up to 500 usage events
+         * @description Per-item results — one bad event never fails the batch. Items with a `transaction_id` are idempotent (duplicates collapse to the original event with status "duplicate").
+         */
+        post: operations["recordUsageEventsBatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/credit-notes": {
         parameters: {
             query?: never;
@@ -2882,6 +2902,195 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/audit-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the append-only audit trail
+         * @description Every successful config-grade mutation (plans, metrics, charges, coupons, webhooks, wallets, alerts, team, settings, ...) is recorded with actor, route, entity, and the request payload. The table is immutable: updates and deletes are rejected at the database level.
+         */
+        get: operations["listAuditLogs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/usage-alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List usage alerts */
+        get: operations["listUsageAlerts"];
+        put?: never;
+        /**
+         * Create a usage threshold alert
+         * @description Fires at most once per billing period per threshold when the subscription's aggregated usage for the metric crosses it — via the `usage.alert.triggered` webhook event plus an email. `threshold_type` is `quantity` (absolute) or `percent_of_limit` (percentage of the entitlement limit whose feature_key equals the metric code; values above 100 alert on overage).
+         */
+        post: operations["createUsageAlert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/usage-alerts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete a usage alert */
+        delete: operations["deleteUsageAlert"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/subscriptions/{id}/commitment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the per-period minimum commitment
+         * @description Minor units. When a period's subtotal (flat + add-ons + metered usage) falls short of the commitment, a "Minimum commitment true-up" line fills exactly the difference on the renewal invoice, taxed at the plan HSN. Usage beyond the floor bills naturally. Amount 0 clears the commitment.
+         */
+        put: operations["setSubscriptionCommitment"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/wallets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a prepaid wallet
+         * @description One wallet per customer+currency, holding money-denominated balance (minor units). At invoice time the wallet drains FIRST — before adjustment credit notes and before the payment gateway.
+         */
+        post: operations["createWallet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/wallets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Fetch a wallet */
+        get: operations["getWallet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/wallets/{id}/top-up": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add balance to a wallet
+         * @description `manual` records money already received (bank transfer / offline); `promotional` grants credit with no money movement and may carry an `expires_at`. Every top-up posts balanced ledger legs.
+         */
+        post: operations["topUpWallet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/wallets/{id}/transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Wallet movement history */
+        get: operations["listWalletTransactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/wallets/{id}/auto-recharge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set or clear the auto-recharge rule
+         * @description Send both fields to enable, both null to disable.
+         */
+        put: operations["updateWalletAutoRecharge"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/customers/{id}/wallets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A customer's wallets */
+        get: operations["listCustomerWallets"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/customers/{id}/entitlements": {
         parameters: {
             query?: never;
@@ -3607,6 +3816,85 @@ export interface components {
             };
             hsn_code?: string;
         };
+        /** @description One immutable record of a config-grade mutation. */
+        AuditLog: {
+            /** Format: uuid */
+            id?: string;
+            /** @description Dashboard user id, or api_key */
+            actor?: string;
+            /** @description METHOD + route template */
+            action?: string;
+            entity_type?: string;
+            entity_id?: string;
+            status?: number;
+            /** @description Truncated to 4KB */
+            request_body?: string;
+            ip?: string;
+            /** Format: date-time */
+            created_at?: string;
+        };
+        /** @description A usage threshold that fires once per billing period. */
+        UsageAlert: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            subscription_id?: string;
+            metric_code?: string;
+            /** @enum {string} */
+            threshold_type?: "quantity" | "percent_of_limit";
+            /** Format: int64 */
+            threshold?: number;
+            /** Format: date-time */
+            last_fired_period_start?: string | null;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        /** @description Prepaid balance per customer+currency, drained before credit notes and the gateway at invoice time. Amounts are minor units. */
+        Wallet: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            customer_id?: string;
+            currency?: string;
+            /** Format: int64 */
+            balance?: number;
+            /** Format: int64 */
+            auto_recharge_threshold?: number | null;
+            /** Format: int64 */
+            auto_recharge_amount?: number | null;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        /** @description One append-only wallet movement with the balance after it. */
+        WalletTransaction: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            wallet_id?: string;
+            /** @enum {string} */
+            type?: "top_up" | "drain" | "expiry";
+            /** @enum {string} */
+            source?: "manual" | "promotional" | "auto_recharge" | "";
+            /** Format: int64 */
+            amount?: number;
+            /**
+             * Format: int64
+             * @description Undrained residue of a top_up row.
+             */
+            remaining?: number | null;
+            /** Format: int64 */
+            balance_after?: number;
+            /** Format: uuid */
+            invoice_id?: string | null;
+            /** Format: date-time */
+            expires_at?: string | null;
+            /** Format: date-time */
+            created_at?: string;
+        };
         /** @description Live preview of the current period's usage priced as of now. */
         UsageAmount: {
             /** Format: uuid */
@@ -3631,6 +3919,16 @@ export interface components {
             }[];
             /** Format: int64 */
             total_amount?: number;
+            /**
+             * Format: int64
+             * @description The subscription's per-period minimum (0 = none).
+             */
+            commitment_amount?: number;
+            /**
+             * Format: int64
+             * @description The true-up that would bill if the period closed now — commitment − (flat fee + usage), floored at zero.
+             */
+            projected_true_up?: number;
         };
         /** @description Read-only proration breakdown for a subscription plan change. Monetary fields are in the currency's smallest unit (e.g. paise/cents). */
         PlanChangePreview: {
@@ -6199,6 +6497,8 @@ export interface operations {
                     properties?: {
                         [key: string]: string;
                     };
+                    /** @description Optional idempotency key: a retried event with the same (subscription, transaction_id) collapses to the original (200 with status "duplicate" and the original event_id). */
+                    transaction_id?: string;
                 };
             };
         };
@@ -6220,6 +6520,55 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    recordUsageEventsBatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    events: {
+                        /** Format: uuid */
+                        subscription_id: string;
+                        /** Format: uuid */
+                        customer_id: string;
+                        dimension: string;
+                        /** Format: int64 */
+                        quantity: number;
+                        properties?: {
+                            [key: string]: string;
+                        };
+                        transaction_id?: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Per-item outcomes, index-aligned with the request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            index?: number;
+                            /** @enum {string} */
+                            status?: "recorded" | "duplicate" | "error";
+                            /** Format: uuid */
+                            event_id?: string;
+                            error?: string;
+                        }[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
         };
     };
     listCreditNotes: {
@@ -10504,6 +10853,371 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    listAuditLogs: {
+        parameters: {
+            query?: {
+                entity_type?: string;
+                entity_id?: string;
+                actor?: string;
+                from?: string;
+                to?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Audit entries, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["AuditLog"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listUsageAlerts: {
+        parameters: {
+            query?: {
+                subscription_id?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Configured alerts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["UsageAlert"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createUsageAlert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    subscription_id: string;
+                    metric_code: string;
+                    /** @enum {string} */
+                    threshold_type: "quantity" | "percent_of_limit";
+                    /** Format: int64 */
+                    threshold: number;
+                };
+            };
+        };
+        responses: {
+            /** @description The created alert */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["UsageAlert"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description An identical alert already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteUsageAlert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setSubscriptionCommitment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    amount: number;
+                };
+            };
+        };
+        responses: {
+            /** @description The updated subscription */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Subscription"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: uuid */
+                    customer_id: string;
+                    currency: string;
+                    /**
+                     * Format: int64
+                     * @description Recharge when balance falls below this (minor units).
+                     */
+                    auto_recharge_threshold?: number | null;
+                    /**
+                     * Format: int64
+                     * @description Amount charged to the saved payment method on recharge.
+                     */
+                    auto_recharge_amount?: number | null;
+                };
+            };
+        };
+        responses: {
+            /** @description The created wallet */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Wallet"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description A wallet for this customer and currency already exists. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The wallet */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Wallet"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    topUpWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * Format: int64
+                     * @description Minor currency units.
+                     */
+                    amount: number;
+                    /**
+                     * @default manual
+                     * @enum {string}
+                     */
+                    source?: "manual" | "promotional";
+                    /**
+                     * Format: date-time
+                     * @description Promotional top-ups only.
+                     */
+                    expires_at?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description The recorded top-up transaction */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["WalletTransaction"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listWalletTransactions: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Transactions, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["WalletTransaction"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateWalletAutoRecharge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: int64 */
+                    auto_recharge_threshold?: number | null;
+                    /** Format: int64 */
+                    auto_recharge_amount?: number | null;
+                };
+            };
+        };
+        responses: {
+            /** @description The updated wallet */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Wallet"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listCustomerWallets: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The customer's wallets across currencies */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Wallet"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
         };
     };
     getCustomerEntitlements: {

@@ -79,6 +79,10 @@ export type Charge = Schemas['Charge'];
 export type ChargeAmounts = Schemas['ChargeAmounts'];
 export type ChargeTier = Schemas['ChargeTier'];
 export type UsageAmount = Schemas['UsageAmount'];
+export type Wallet = Schemas['Wallet'];
+export type WalletTransaction = Schemas['WalletTransaction'];
+export type UsageAlert = Schemas['UsageAlert'];
+export type AuditLog = Schemas['AuditLog'];
 
 /** The JSON body of an operation's success (2xx) response, per the spec. */
 type SuccessJson<O> = O extends { responses: infer R }
@@ -158,6 +162,11 @@ export interface UsageEventInput {
      * property (e.g. active users by `user_id`).
      */
     properties?: Record<string, string>;
+    /**
+     * Optional idempotency key (≤255 chars): a retried event with the same
+     * (subscription, transaction_id) collapses to the original.
+     */
+    transaction_id?: string;
 }
 
 /** Payload for creating or updating a billable metric. */
@@ -333,9 +342,18 @@ export class Recurso {
         /**
          * Live usage-amount preview: what the current period's metered usage
          * would rate to if invoiced now, per charge, in minor currency units.
+         * Includes commitment_amount and projected_true_up when set.
          */
         usageAmount: (id: string) =>
             this.get<Res<'getSubscriptionUsageAmount'>>(`/v1/subscriptions/${id}/usage-amount`),
+        /**
+         * Set the per-period minimum (minor units): shortfalls bill a
+         * true-up line at period close. Amount 0 clears it.
+         */
+        setCommitment: (id: string, amount: number) =>
+            this.put<Res<'setSubscriptionCommitment'>>(`/v1/subscriptions/${id}/commitment`, {
+                amount,
+            }),
     };
 
     public invoices = {
@@ -368,6 +386,59 @@ export class Recurso {
         query: (params: UsageQueryParams) => this.get<Res<'queryUsage'>>('/v1/usage', params),
         /** The tenant's dimension catalog with first/last seen and event counts. */
         dimensions: () => this.get<Res<'listUsageDimensions'>>('/v1/usage/dimensions'),
+        /**
+         * Batch-record up to 500 events with per-item results. Events with
+         * a transaction_id are idempotent (duplicates collapse).
+         */
+        recordBatch: (events: UsageEventInput[]) =>
+            this.post<Res<'recordUsageEventsBatch'>>('/v1/usage/events/batch', { events }),
+    };
+
+    public wallets = {
+        /** Create a prepaid wallet (one per customer+currency). */
+        create: (data: Body<'createWallet'>) =>
+            this.post<Res<'createWallet'>>('/v1/wallets', data),
+        get: (id: string) => this.get<Res<'getWallet'>>(`/v1/wallets/${id}`),
+        /** A customer's wallets across currencies. */
+        forCustomer: (customerId: string) =>
+            this.get<Res<'listCustomerWallets'>>(`/v1/customers/${customerId}/wallets`),
+        /**
+         * Add balance: source "manual" records money already received;
+         * "promotional" grants credit (optionally expiring). Amounts are
+         * minor units.
+         */
+        topUp: (id: string, data: Body<'topUpWallet'>) =>
+            this.post<Res<'topUpWallet'>>(`/v1/wallets/${id}/top-up`, data),
+        transactions: (id: string, params?: { limit?: number }) =>
+            this.get<Res<'listWalletTransactions'>>(`/v1/wallets/${id}/transactions`, params),
+        /** Set (both fields) or clear (both null) the auto-recharge rule. */
+        setAutoRecharge: (id: string, data: Body<'updateWalletAutoRecharge'>) =>
+            this.put<Res<'updateWalletAutoRecharge'>>(`/v1/wallets/${id}/auto-recharge`, data),
+    };
+
+    public usageAlerts = {
+        /**
+         * Threshold on a metric: fires once per billing period via the
+         * usage.alert.triggered webhook event + email.
+         */
+        create: (data: Body<'createUsageAlert'>) =>
+            this.post<Res<'createUsageAlert'>>('/v1/usage-alerts', data),
+        list: (params?: { subscription_id?: string }) =>
+            this.get<Res<'listUsageAlerts'>>('/v1/usage-alerts', params),
+        delete: (id: string) => this.del<Res<'deleteUsageAlert'>>(`/v1/usage-alerts/${id}`),
+    };
+
+    public auditLogs = {
+        /** The append-only config audit trail, newest first. */
+        list: (params?: {
+            entity_type?: string;
+            entity_id?: string;
+            actor?: string;
+            from?: string;
+            to?: string;
+            limit?: number;
+            offset?: number;
+        }) => this.get<Res<'listAuditLogs'>>('/v1/audit-logs', params),
     };
 
     public billableMetrics = {

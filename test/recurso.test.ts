@@ -164,6 +164,80 @@ const cases: Record<string, MethodCase[]> = {
             verb: 'get',
             path: '/v1/subscriptions/sub_1/usage-amount',
         },
+        {
+            method: 'setCommitment',
+            call: (r) => r.subscriptions.setCommitment('sub_1', 5000000),
+            verb: 'put',
+            path: '/v1/subscriptions/sub_1/commitment',
+            body: { amount: 5000000 },
+        },
+    ],
+
+    wallets: [
+        {
+            method: 'create',
+            call: (r) => r.wallets.create({ customer_id: 'cus_1', currency: 'INR' }),
+            verb: 'post',
+            path: '/v1/wallets',
+            body: { customer_id: 'cus_1', currency: 'INR' },
+        },
+        { method: 'get', call: (r) => r.wallets.get('wal_1'), verb: 'get', path: '/v1/wallets/wal_1' },
+        {
+            method: 'forCustomer',
+            call: (r) => r.wallets.forCustomer('cus_1'),
+            verb: 'get',
+            path: '/v1/customers/cus_1/wallets',
+        },
+        {
+            method: 'topUp',
+            call: (r) => r.wallets.topUp('wal_1', { amount: 500000, source: 'manual' }),
+            verb: 'post',
+            path: '/v1/wallets/wal_1/top-up',
+            body: { amount: 500000, source: 'manual' },
+        },
+        {
+            method: 'transactions',
+            call: (r) => r.wallets.transactions('wal_1', { limit: 20 }),
+            verb: 'get',
+            path: '/v1/wallets/wal_1/transactions',
+            params: { limit: 20 },
+        },
+        {
+            method: 'setAutoRecharge',
+            call: (r) => r.wallets.setAutoRecharge('wal_1', { auto_recharge_threshold: 100000, auto_recharge_amount: 500000 }),
+            verb: 'put',
+            path: '/v1/wallets/wal_1/auto-recharge',
+            body: { auto_recharge_threshold: 100000, auto_recharge_amount: 500000 },
+        },
+    ],
+
+    usageAlerts: [
+        {
+            method: 'create',
+            call: (r) =>
+                r.usageAlerts.create({ subscription_id: 'sub_1', metric_code: 'api_calls', threshold_type: 'quantity', threshold: 1000000 }),
+            verb: 'post',
+            path: '/v1/usage-alerts',
+            body: { subscription_id: 'sub_1', metric_code: 'api_calls', threshold_type: 'quantity', threshold: 1000000 },
+        },
+        {
+            method: 'list',
+            call: (r) => r.usageAlerts.list({ subscription_id: 'sub_1' }),
+            verb: 'get',
+            path: '/v1/usage-alerts',
+            params: { subscription_id: 'sub_1' },
+        },
+        { method: 'delete', call: (r) => r.usageAlerts.delete('ua_1'), verb: 'delete', path: '/v1/usage-alerts/ua_1' },
+    ],
+
+    auditLogs: [
+        {
+            method: 'list',
+            call: (r) => r.auditLogs.list({ entity_type: 'plans', limit: 50 }),
+            verb: 'get',
+            path: '/v1/audit-logs',
+            params: { entity_type: 'plans', limit: 50 },
+        },
     ],
 
     invoices: [
@@ -224,6 +298,20 @@ const cases: Record<string, MethodCase[]> = {
             },
         },
         { method: 'dimensions', call: (r) => r.usage.dimensions(), verb: 'get', path: '/v1/usage/dimensions' },
+        {
+            method: 'recordBatch',
+            call: (r) =>
+                r.usage.recordBatch([
+                    { subscription_id: 'sub_1', customer_id: 'cus_1', dimension: 'api_calls', quantity: 10, transaction_id: 't-1' },
+                ]),
+            verb: 'post',
+            path: '/v1/usage/events/batch',
+            body: {
+                events: [
+                    { subscription_id: 'sub_1', customer_id: 'cus_1', dimension: 'api_calls', quantity: 10, transaction_id: 't-1' },
+                ],
+            },
+        },
         {
             method: 'record (with properties)',
             call: (r) =>

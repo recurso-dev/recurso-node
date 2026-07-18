@@ -1,6 +1,6 @@
 {
     "name": "recurso",
-    "version": "1.3.0",
+    "version": "1.4.0",
     "description": "Official Node.js SDK for Recurso Billing",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
