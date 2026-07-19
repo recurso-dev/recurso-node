@@ -2987,7 +2987,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** List the tenant's wallets */
+        get: operations["listWallets"];
         put?: never;
         /**
          * Create a prepaid wallet
@@ -4138,6 +4139,8 @@ export interface components {
             billing_anchor_type?: "acquisition" | "first_of_month";
             /** @enum {string} */
             payment_terms?: "net0" | "net15" | "net30" | "net60";
+            /** @description When greater than zero, the subscription starts in `trialing` and converts to `active` (generating its first invoice) when the trial ends. */
+            trial_days?: number;
         };
         Subscription: {
             /** Format: uuid */
@@ -6618,6 +6621,12 @@ export interface operations {
                     amount: number;
                     currency: string;
                     reason?: string;
+                    /**
+                     * @description `adjustment` (default) issues account credit. `refund` calls the gateway's refund API against the paid invoice in `invoice_id` and posts a Refunds-vs-Cash ledger reversal; its progress is tracked by the credit note's `refund_status`.
+                     * @default adjustment
+                     * @enum {string}
+                     */
+                    type?: "adjustment" | "refund";
                 };
             };
         };
@@ -11006,6 +11015,31 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listWallets: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Wallets, most recently active first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Wallet"][];
+                    };
+                };
+            };
             401: components["responses"]["Unauthorized"];
         };
     };
