@@ -6,7 +6,7 @@
  * opaque `ApiResponse` (`{ [k: string]: JsonValue }`). Each assignment below
  * would stop type-checking if the field types were widened to `JsonValue`.
  */
-import type { Recurso, Subscription, Customer, Invoice } from '../src/index';
+import type { Recurso, Subscription, Customer, Invoice, Organization, ChurnAlert } from '../src/index';
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function _assertResponsesAreTyped(client: Recurso): Promise<void> {
@@ -31,6 +31,15 @@ async function _assertResponsesAreTyped(client: Recurso): Promise<void> {
     const firstInvoice: Invoice | undefined = invoices.data?.[0];
     const total: number | undefined = firstInvoice?.total;
     void total;
+
+    const orgs = await client.organizations.list();
+    const firstOrg: Organization | undefined = orgs.data?.[0];
+    const orgName: string | undefined = firstOrg?.name;
+    void orgName;
+
+    const alerts = await client.churn.alerts();
+    const firstAlert: ChurnAlert | undefined = alerts.data?.[0];
+    void firstAlert;
 }
 
 void _assertResponsesAreTyped;

@@ -95,6 +95,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/demo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start a demo sandbox session
+         * @description Opens a session in the shared demo sandbox (sets the httpOnly `recurso_session` cookie) and returns the demo user's email and API key. Only available when the server runs with DEMO_MODE enabled; returns 404 otherwise.
+         */
+        post: operations["startDemoSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/login": {
         parameters: {
             query?: never;
@@ -238,6 +258,48 @@ export interface paths {
         put?: never;
         /** Create a plan */
         post: operations["createPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/plans/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a plan */
+        get: operations["getPlan"];
+        /**
+         * Update or archive a plan
+         * @description Partial update of mutable plan fields — omitted fields are left unchanged. Set `active: false` to archive the plan (hides it from new subscriptions without affecting existing ones) and `true` to restore it. The plan's price/amount is a separate versioned entity and is not editable here.
+         */
+        put: operations["updatePlan"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/customers/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a customer */
+        get: operations["getCustomer"];
+        /**
+         * Update or archive a customer
+         * @description Partial update — omitted fields are left unchanged. Set `active: false` to archive the customer; archiving is refused while the customer has active subscriptions (cancel or pause them first). Archived customers keep full billing history and can be restored with `active: true`.
+         */
+        put: operations["updateCustomer"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -581,6 +643,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/coupons/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Deactivate or reactivate a coupon
+         * @description Flips the redemption gate. `active: false` stops new subscriptions from redeeming the code; existing subscriptions keep their applied discount. `active: true` restores redeemability.
+         */
+        put: operations["updateCoupon"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/coupons": {
         parameters: {
             query?: never;
@@ -783,6 +865,26 @@ export interface paths {
          * @description The signing `secret` is returned only in this response.
          */
         post: operations["createWebhookEndpoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/webhooks/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Pause or resume a webhook endpoint
+         * @description Paused ("inactive") endpoints stop receiving deliveries but keep their secret and configuration.
+         */
+        put: operations["updateWebhookEndpointStatus"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1589,6 +1691,26 @@ export interface paths {
          */
         post: operations["askAnalytics"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/developer/keys/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Revoke an API key
+         * @description Soft-deactivates the key. Authentication filters on the active flag, so a revoked key stops working immediately and cannot be restored. Owner/admin only for dashboard sessions.
+         */
+        delete: operations["revokeAPIKey"];
         options?: never;
         head?: never;
         patch?: never;
@@ -2402,6 +2524,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/accounting/connect-token/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Connect a token-based accounting provider (NetSuite, Tally)
+         * @description Creates or refreshes a connection for providers outside the browser OAuth flow. `netsuite` requires `account_id` and a SuiteTalk OAuth 2.0 `access_token` minted in NetSuite (EXPERIMENTAL). `tally` takes no credentials — it enables the local JSONL export sync.
+         */
+        post: operations["connectAccountingProviderToken"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/accounting/callback/{provider}": {
         parameters: {
             query?: never;
@@ -2411,7 +2553,7 @@ export interface paths {
         };
         /**
          * OAuth callback for accounting providers
-         * @description Redirect target for QuickBooks/Xero. Exchanges the authorization code for tokens and stores (or refreshes) the connection.
+         * @description Redirect target for QuickBooks/Xero. Exchanges the authorization code for tokens, stores (or refreshes) the connection, and 302-redirects the browser back to the dashboard's Integrations page — `{DASHBOARD_URL}/integrations?connected={provider}` on success, or `?error={code}` (missing_code, invalid_state, unsupported_provider, exchange_failed, org_lookup_failed, save_failed) on failure.
          */
         get: operations["accountingOAuthCallback"];
         put?: never;
@@ -5471,6 +5613,41 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    startDemoSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Demo session opened. Sets the recurso_session cookie. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            demo?: boolean;
+                            /** Format: email */
+                            email?: string;
+                            api_key?: string;
+                        };
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description Demo environment is still warming up — retry shortly. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     login: {
         parameters: {
             query?: never;
@@ -5774,6 +5951,141 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The plan. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Plan"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updatePlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    hsn_code?: string;
+                    /** @enum {string} */
+                    interval_unit?: "day" | "week" | "month" | "year";
+                    interval_count?: number;
+                    active?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated plan. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Plan"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getCustomer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The customer. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Customer"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateCustomer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    /** Format: email */
+                    email?: string;
+                    phone?: string;
+                    tax_id?: string;
+                    gstin?: string;
+                    /** @enum {string} */
+                    tax_type?: "business" | "consumer";
+                    place_of_supply?: string;
+                    line1?: string;
+                    city?: string;
+                    state?: string;
+                    zip?: string;
+                    country?: string;
+                    active?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated customer. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Customer"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     listCustomers: {
@@ -6416,6 +6728,40 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    updateCoupon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    active: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Coupon updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status?: "activated" | "deactivated";
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listCoupons: {
         parameters: {
             query?: never;
@@ -6938,6 +7284,36 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateWebhookEndpointStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    status: "active" | "inactive";
+                };
+            };
+        };
+        responses: {
+            /** @description Status updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     deleteWebhookEndpoint: {
@@ -8186,6 +8562,40 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    revokeAPIKey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Key revoked. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "revoked";
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Requires owner or admin role. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
         };
     };
     listAPIKeys: {
@@ -9770,6 +10180,44 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    connectAccountingProviderToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "netsuite" | "tally";
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @description NetSuite account id (required for netsuite). */
+                    account_id?: string;
+                    /** @description SuiteTalk OAuth 2.0 access token (required for netsuite). */
+                    access_token?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Existing connection refreshed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Connection created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     accountingOAuthCallback: {
         parameters: {
             query: {
@@ -9788,21 +10236,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Connection stored. */
-            200: {
+            /** @description Redirect to the dashboard Integrations page carrying the outcome as a query param (`connected` or `error`). */
+            302: {
                 headers: {
+                    Location?: string;
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": {
-                        /** @constant */
-                        status?: "connected";
-                        /** Format: uuid */
-                        connection_id?: string;
-                    };
-                };
+                content?: never;
             };
-            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
         };
     };
