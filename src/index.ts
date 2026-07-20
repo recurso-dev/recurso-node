@@ -359,6 +359,14 @@ export class Recurso {
             this.get<Res<'listSubscriptions'>>('/v1/subscriptions', params),
         update: (id: string, data: Body<'updateSubscription'>) =>
             this.put<Res<'updateSubscription'>>(`/v1/subscriptions/${id}`, data),
+        /**
+         * Preview switching this subscription to another plan without applying
+         * it — returns the proration credit/charge breakdown (`PlanChangePreview`).
+         */
+        previewChange: (id: string, planId: string) =>
+            this.get<Res<'previewPlanChange'>>(`/v1/subscriptions/${id}/preview-change`, {
+                plan_id: planId,
+            }),
         cancel: (id: string, data?: Body<'cancelSubscription'>) =>
             this.post<Res<'cancelSubscription'>>(`/v1/subscriptions/${id}/cancel`, data),
         pause: (id: string, data?: Body<'pauseSubscription'>) =>
