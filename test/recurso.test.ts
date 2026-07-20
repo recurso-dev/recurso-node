@@ -152,6 +152,13 @@ const cases: Record<string, MethodCase[]> = {
         { method: 'list', call: (r) => r.subscriptions.list(listParams), verb: 'get', path: '/v1/subscriptions', params: listParams },
         { method: 'update', call: (r) => r.subscriptions.update('sub_1', body), verb: 'put', path: '/v1/subscriptions/sub_1', body },
         {
+            method: 'previewChange',
+            call: (r) => r.subscriptions.previewChange('sub_1', 'plan_2'),
+            verb: 'get',
+            path: '/v1/subscriptions/sub_1/preview-change',
+            params: { plan_id: 'plan_2' },
+        },
+        {
             method: 'cancel',
             call: (r) => r.subscriptions.cancel('sub_1', { at_period_end: true }),
             verb: 'post',
