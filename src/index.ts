@@ -83,6 +83,19 @@ export type Wallet = Schemas['Wallet'];
 export type WalletTransaction = Schemas['WalletTransaction'];
 export type UsageAlert = Schemas['UsageAlert'];
 export type AuditLog = Schemas['AuditLog'];
+export type VirtualAccount = Schemas['VirtualAccount'];
+export type OfflinePayment = Schemas['OfflinePayment'];
+export type Organization = Schemas['Organization'];
+export type OrgMRRMetrics = Schemas['OrgMRRMetrics'];
+export type AccountingConnection = Schemas['AccountingConnection'];
+export type AccountingSyncLog = Schemas['AccountingSyncLog'];
+export type ChurnAlert = Schemas['ChurnAlert'];
+export type CancelFlow = Schemas['CancelFlow'];
+export type CancelFlowStep = Schemas['CancelFlowStep'];
+export type CancelFlowSession = Schemas['CancelFlowSession'];
+export type FlowStats = Schemas['FlowStats'];
+export type DunningCampaign = Schemas['DunningCampaign'];
+export type DunningCampaignStep = Schemas['DunningCampaignStep'];
 
 /** The JSON body of an operation's success (2xx) response, per the spec. */
 type SuccessJson<O> = O extends { responses: infer R }
@@ -284,6 +297,21 @@ export class Recurso {
         create: (data: CustomerInput) =>
             this.post<Res<'createCustomer'>>('/v1/customers', { country: 'US', ...data }),
         list: (params?: ListParams) => this.get<Res<'listCustomers'>>('/v1/customers', params),
+        get: (id: string) => this.get<Res<'getCustomer'>>(`/v1/customers/${id}`),
+        /**
+         * Partial update — omitted fields are left unchanged. Set
+         * `active: false` to archive (see {@link archive}) and `true` to
+         * restore an archived customer.
+         */
+        update: (id: string, data: Body<'updateCustomer'>) =>
+            this.put<Res<'updateCustomer'>>(`/v1/customers/${id}`, data),
+        /**
+         * Archive a customer. Refused while the customer has active
+         * subscriptions (cancel or pause them first). Archived customers
+         * keep full billing history; restore with `update(id, {active: true})`.
+         */
+        archive: (id: string) =>
+            this.put<Res<'updateCustomer'>>(`/v1/customers/${id}`, { active: false }),
         updatePaymentMethod: (id: string, data: Body<'updateCustomerPaymentMethod'>) =>
             this.put<Res<'updateCustomerPaymentMethod'>>(
                 `/v1/customers/${id}/payment-method`,
@@ -298,6 +326,20 @@ export class Recurso {
         create: (data: PlanInput) =>
             this.post<Res<'createPlan'>>('/v1/plans', { interval_count: 1, ...data }),
         list: (params?: ListParams) => this.get<Res<'listPlans'>>('/v1/plans', params),
+        get: (id: string) => this.get<Res<'getPlan'>>(`/v1/plans/${id}`),
+        /**
+         * Partial update of mutable plan fields — omitted fields are left
+         * unchanged. The plan's price/amount is a separate versioned entity
+         * and is not editable here. Set `active: false` to archive (see
+         * {@link archive}) and `true` to restore.
+         */
+        update: (id: string, data: Body<'updatePlan'>) =>
+            this.put<Res<'updatePlan'>>(`/v1/plans/${id}`, data),
+        /**
+         * Archive a plan: hides it from new subscriptions without affecting
+         * existing ones. Restore with `update(id, {active: true})`.
+         */
+        archive: (id: string) => this.put<Res<'updatePlan'>>(`/v1/plans/${id}`, { active: false }),
         /**
          * Replace a plan's full usage-charge set (PUT semantics: charges
          * absent from the list are removed). Flat plan prices are untouched —
@@ -371,6 +413,19 @@ export class Recurso {
     public coupons = {
         create: (data: CouponInput) => this.post<Res<'createCoupon'>>('/v1/coupons', data),
         list: (params?: ListParams) => this.get<Res<'listCoupons'>>('/v1/coupons', params),
+        /**
+         * Flip the redemption gate: `{active: false}` stops new
+         * subscriptions from redeeming the code (existing subscriptions
+         * keep their applied discount); `{active: true}` restores it.
+         */
+        update: (id: string, data: Body<'updateCoupon'>) =>
+            this.put<Res<'updateCoupon'>>(`/v1/coupons/${id}`, data),
+        /** Restore redeemability of a deactivated coupon. */
+        activate: (id: string) =>
+            this.put<Res<'updateCoupon'>>(`/v1/coupons/${id}`, { active: true }),
+        /** Stop new redemptions; existing subscriptions keep their discount. */
+        deactivate: (id: string) =>
+            this.put<Res<'updateCoupon'>>(`/v1/coupons/${id}`, { active: false }),
     };
 
     public usage = {
@@ -488,6 +543,19 @@ export class Recurso {
         list: () => this.get<Res<'listWebhookEndpoints'>>('/v1/webhooks'),
         delete: (id: string) => this.del<Res<'deleteWebhookEndpoint'>>(`/v1/webhooks/${id}`),
         /**
+         * Pause deliveries to an endpoint. Paused ("inactive") endpoints
+         * stop receiving deliveries but keep their secret and configuration.
+         */
+        pause: (id: string) =>
+            this.put<Res<'updateWebhookEndpointStatus'>>(`/v1/webhooks/${id}/status`, {
+                status: 'inactive',
+            }),
+        /** Resume deliveries to a paused endpoint. */
+        resume: (id: string) =>
+            this.put<Res<'updateWebhookEndpointStatus'>>(`/v1/webhooks/${id}/status`, {
+                status: 'active',
+            }),
+        /**
          * Recent delivery attempts to an endpoint, newest first. Filter by
          * derived status (pending | succeeded | failed) and paginate with
          * limit/offset.
@@ -574,5 +642,139 @@ export class Recurso {
         accounts: () => this.get<Res<'listLedgerAccounts'>>('/v1/ledger/accounts'),
         entries: (params?: LedgerEntriesParams) =>
             this.get<Res<'listLedgerEntries'>>('/v1/ledger/entries', params),
+    };
+
+    public organizations = {
+        create: (data: Body<'createOrganization'>) =>
+            this.post<Res<'createOrganization'>>('/v1/organizations', data),
+        list: () => this.get<Res<'listOrganizations'>>('/v1/organizations'),
+        get: (id: string) => this.get<Res<'getOrganization'>>(`/v1/organizations/${id}`),
+        update: (id: string, data: Body<'updateOrganization'>) =>
+            this.put<Res<'updateOrganization'>>(`/v1/organizations/${id}`, data),
+        delete: (id: string) => this.del<Res<'deleteOrganization'>>(`/v1/organizations/${id}`),
+        /** Attach a tenant to the organization. */
+        addTenant: (id: string, tenantId: string) =>
+            this.post<Res<'addOrganizationTenant'>>(`/v1/organizations/${id}/tenants`, {
+                tenant_id: tenantId,
+            }),
+        tenants: (id: string) =>
+            this.get<Res<'listOrganizationTenants'>>(`/v1/organizations/${id}/tenants`),
+        removeTenant: (id: string, tenantId: string) =>
+            this.del<Res<'removeOrganizationTenant'>>(
+                `/v1/organizations/${id}/tenants/${tenantId}`,
+            ),
+        /** Consolidated MRR across the organization's tenants, by currency and tenant. */
+        mrr: (id: string) =>
+            this.get<Res<'getOrganizationMRR'>>(`/v1/organizations/${id}/analytics/mrr`),
+    };
+
+    public accounting = {
+        /** Accounting connections for the tenant (OAuth tokens are never serialized). */
+        connections: () =>
+            this.get<Res<'listAccountingConnections'>>('/v1/accounting/connections'),
+        /**
+         * Connect a token-based provider outside the browser OAuth flow.
+         * `netsuite` requires `{account_id, access_token}` (SuiteTalk OAuth
+         * 2.0); `tally` takes no credentials — it enables the local JSONL
+         * export sync.
+         */
+        connectToken: (
+            provider: 'netsuite' | 'tally',
+            data?: Body<'connectAccountingProviderToken'>,
+        ) =>
+            this.post<Res<'connectAccountingProviderToken'>>(
+                `/v1/accounting/connect-token/${provider}`,
+                data,
+            ),
+        disconnect: (id: string) =>
+            this.del<Res<'disconnectAccounting'>>(`/v1/accounting/connections/${id}`),
+        /** Trigger a sync to connected accounting systems. */
+        sync: () => this.post<Res<'triggerAccountingSync'>>('/v1/accounting/sync'),
+        syncStatus: () => this.get<Res<'getAccountingSyncStatus'>>('/v1/accounting/sync/status'),
+    };
+
+    public virtualAccounts = {
+        /**
+         * Provision a virtual bank account (via Razorpay) that the customer
+         * can wire money to. `amount` is the expected amount in minor units.
+         */
+        create: (data: Body<'createVirtualAccount'>) =>
+            this.post<Res<'createVirtualAccount'>>('/v1/virtual-accounts', data),
+        list: () => this.get<Res<'listVirtualAccounts'>>('/v1/virtual-accounts'),
+    };
+
+    public offlinePayments = {
+        /**
+         * Manually record a bank transfer, cash, or cheque payment
+         * (optionally against an invoice). Amounts are minor units.
+         */
+        record: (data: Body<'recordOfflinePayment'>) =>
+            this.post<Res<'recordOfflinePayment'>>('/v1/payments/offline', data),
+        list: () => this.get<Res<'listOfflinePayments'>>('/v1/payments/offline'),
+    };
+
+    public churn = {
+        /** Customers at or above a churn-score threshold (default 70). */
+        highRisk: (params?: { threshold?: number }) =>
+            this.get<Res<'listHighRiskCustomers'>>('/v1/churn/high-risk', params),
+        /** Up to 100 unacknowledged churn alerts, newest first. */
+        alerts: () => this.get<Res<'listChurnAlerts'>>('/v1/churn/alerts'),
+        acknowledgeAlert: (id: string) =>
+            this.post<Res<'acknowledgeChurnAlert'>>(`/v1/churn/alerts/${id}/ack`),
+    };
+
+    public cancelFlows = {
+        create: (data: Body<'createCancelFlow'>) =>
+            this.post<Res<'createCancelFlow'>>('/v1/cancel-flows', data),
+        list: () => this.get<Res<'listCancelFlows'>>('/v1/cancel-flows'),
+        /** Retrieve a cancel flow with its steps. */
+        get: (id: string) => this.get<Res<'getCancelFlow'>>(`/v1/cancel-flows/${id}`),
+        update: (id: string, data: Body<'updateCancelFlow'>) =>
+            this.put<Res<'updateCancelFlow'>>(`/v1/cancel-flows/${id}`, data),
+        addStep: (flowId: string, data: Body<'createCancelFlowStep'>) =>
+            this.post<Res<'createCancelFlowStep'>>(`/v1/cancel-flows/${flowId}/steps`, data),
+        updateStep: (stepId: string, data: Body<'updateCancelFlowStep'>) =>
+            this.put<Res<'updateCancelFlowStep'>>(`/v1/cancel-flows/steps/${stepId}`, data),
+        deleteStep: (stepId: string) =>
+            this.del<Res<'deleteCancelFlowStep'>>(`/v1/cancel-flows/steps/${stepId}`),
+        /**
+         * Begin the tenant's default flow for a customer/subscription.
+         * Rejected while the customer's offer cooldown is active.
+         */
+        startSession: (data: Body<'startCancelFlowSession'>) =>
+            this.post<Res<'startCancelFlowSession'>>('/v1/cancel-flows/sessions/start', data),
+        getSession: (id: string) =>
+            this.get<Res<'getCancelFlowSession'>>(`/v1/cancel-flows/sessions/${id}`),
+        /** Submit a step response; the result indicates the next step or completion. */
+        submitStep: (sessionId: string, data: Body<'submitCancelFlowStep'>) =>
+            this.post<Res<'submitCancelFlowStep'>>(
+                `/v1/cancel-flows/sessions/${sessionId}/submit`,
+                data,
+            ),
+        /** Aggregated save/churn statistics for a flow. */
+        stats: (flowId: string) =>
+            this.get<Res<'getCancelFlowStats'>>('/v1/cancel-flows/stats', { flow_id: flowId }),
+    };
+
+    public dunningCampaigns = {
+        create: (data: Body<'createDunningCampaign'>) =>
+            this.post<Res<'createDunningCampaign'>>('/v1/dunning-campaigns', data),
+        list: () => this.get<Res<'listDunningCampaigns'>>('/v1/dunning-campaigns'),
+        /** Retrieve a dunning campaign with its steps. */
+        get: (id: string) => this.get<Res<'getDunningCampaign'>>(`/v1/dunning-campaigns/${id}`),
+        update: (id: string, data: Body<'updateDunningCampaign'>) =>
+            this.put<Res<'updateDunningCampaign'>>(`/v1/dunning-campaigns/${id}`, data),
+        addStep: (campaignId: string, data: Body<'createDunningCampaignStep'>) =>
+            this.post<Res<'createDunningCampaignStep'>>(
+                `/v1/dunning-campaigns/${campaignId}/steps`,
+                data,
+            ),
+        updateStep: (stepId: string, data: Body<'updateDunningCampaignStep'>) =>
+            this.put<Res<'updateDunningCampaignStep'>>(
+                `/v1/dunning-campaigns/steps/${stepId}`,
+                data,
+            ),
+        deleteStep: (stepId: string) =>
+            this.del<Res<'deleteDunningCampaignStep'>>(`/v1/dunning-campaigns/steps/${stepId}`),
     };
 }

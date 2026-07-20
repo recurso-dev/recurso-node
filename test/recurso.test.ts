@@ -77,6 +77,21 @@ const cases: Record<string, MethodCase[]> = {
             body: { email: 'jane@example.com', name: 'Jane', country: 'IN' },
         },
         { method: 'list', call: (r) => r.customers.list(listParams), verb: 'get', path: '/v1/customers', params: listParams },
+        { method: 'get', call: (r) => r.customers.get('cus_1'), verb: 'get', path: '/v1/customers/cus_1' },
+        {
+            method: 'update',
+            call: (r) => r.customers.update('cus_1', { name: 'Jane II', city: 'Pune' }),
+            verb: 'put',
+            path: '/v1/customers/cus_1',
+            body: { name: 'Jane II', city: 'Pune' },
+        },
+        {
+            method: 'archive',
+            call: (r) => r.customers.archive('cus_1'),
+            verb: 'put',
+            path: '/v1/customers/cus_1',
+            body: { active: false },
+        },
         {
             method: 'updatePaymentMethod',
             call: (r) => r.customers.updatePaymentMethod('cus_1', body),
@@ -98,6 +113,21 @@ const cases: Record<string, MethodCase[]> = {
             body: { name: 'Pro', code: 'PRO', amount: 2900, currency: 'USD', interval_unit: 'month', interval_count: 3 },
         },
         { method: 'list', call: (r) => r.plans.list(listParams), verb: 'get', path: '/v1/plans', params: listParams },
+        { method: 'get', call: (r) => r.plans.get('plan_1'), verb: 'get', path: '/v1/plans/plan_1' },
+        {
+            method: 'update',
+            call: (r) => r.plans.update('plan_1', { name: 'Pro v2', interval_count: 6 }),
+            verb: 'put',
+            path: '/v1/plans/plan_1',
+            body: { name: 'Pro v2', interval_count: 6 },
+        },
+        {
+            method: 'archive',
+            call: (r) => r.plans.archive('plan_1'),
+            verb: 'put',
+            path: '/v1/plans/plan_1',
+            body: { active: false },
+        },
         {
             method: 'setCharges',
             call: (r) =>
@@ -267,6 +297,27 @@ const cases: Record<string, MethodCase[]> = {
             body: { code: 'SAVE10', discount_type: 'percent', discount_value: 10, duration: 'forever' },
         },
         { method: 'list', call: (r) => r.coupons.list(listParams), verb: 'get', path: '/v1/coupons', params: listParams },
+        {
+            method: 'update',
+            call: (r) => r.coupons.update('cpn_1', { active: true }),
+            verb: 'put',
+            path: '/v1/coupons/cpn_1',
+            body: { active: true },
+        },
+        {
+            method: 'activate',
+            call: (r) => r.coupons.activate('cpn_1'),
+            verb: 'put',
+            path: '/v1/coupons/cpn_1',
+            body: { active: true },
+        },
+        {
+            method: 'deactivate',
+            call: (r) => r.coupons.deactivate('cpn_1'),
+            verb: 'put',
+            path: '/v1/coupons/cpn_1',
+            body: { active: false },
+        },
     ],
 
     usage: [
@@ -382,6 +433,20 @@ const cases: Record<string, MethodCase[]> = {
         { method: 'list', call: (r) => r.webhooks.list(), verb: 'get', path: '/v1/webhooks' },
         { method: 'delete', call: (r) => r.webhooks.delete('wh_1'), verb: 'delete', path: '/v1/webhooks/wh_1' },
         {
+            method: 'pause',
+            call: (r) => r.webhooks.pause('wh_1'),
+            verb: 'put',
+            path: '/v1/webhooks/wh_1/status',
+            body: { status: 'inactive' },
+        },
+        {
+            method: 'resume',
+            call: (r) => r.webhooks.resume('wh_1'),
+            verb: 'put',
+            path: '/v1/webhooks/wh_1/status',
+            body: { status: 'active' },
+        },
+        {
             method: 'deliveries',
             call: (r) => r.webhooks.deliveries('wh_1', { limit: 25, offset: 50, status: 'failed' }),
             verb: 'get',
@@ -477,6 +542,219 @@ const cases: Record<string, MethodCase[]> = {
             verb: 'get',
             path: '/v1/ledger/entries',
             params: { account_id: 'acct_1' },
+        },
+    ],
+
+    organizations: [
+        {
+            method: 'create',
+            call: (r) => r.organizations.create({ name: 'Acme Group', owner_email: 'owner@acme.com' }),
+            verb: 'post',
+            path: '/v1/organizations',
+            body: { name: 'Acme Group', owner_email: 'owner@acme.com' },
+        },
+        { method: 'list', call: (r) => r.organizations.list(), verb: 'get', path: '/v1/organizations' },
+        { method: 'get', call: (r) => r.organizations.get('org_1'), verb: 'get', path: '/v1/organizations/org_1' },
+        {
+            method: 'update',
+            call: (r) => r.organizations.update('org_1', { name: 'Acme Holdings' }),
+            verb: 'put',
+            path: '/v1/organizations/org_1',
+            body: { name: 'Acme Holdings' },
+        },
+        { method: 'delete', call: (r) => r.organizations.delete('org_1'), verb: 'delete', path: '/v1/organizations/org_1' },
+        {
+            method: 'addTenant',
+            call: (r) => r.organizations.addTenant('org_1', 'ten_1'),
+            verb: 'post',
+            path: '/v1/organizations/org_1/tenants',
+            body: { tenant_id: 'ten_1' },
+        },
+        { method: 'tenants', call: (r) => r.organizations.tenants('org_1'), verb: 'get', path: '/v1/organizations/org_1/tenants' },
+        {
+            method: 'removeTenant',
+            call: (r) => r.organizations.removeTenant('org_1', 'ten_1'),
+            verb: 'delete',
+            path: '/v1/organizations/org_1/tenants/ten_1',
+        },
+        { method: 'mrr', call: (r) => r.organizations.mrr('org_1'), verb: 'get', path: '/v1/organizations/org_1/analytics/mrr' },
+    ],
+
+    accounting: [
+        { method: 'connections', call: (r) => r.accounting.connections(), verb: 'get', path: '/v1/accounting/connections' },
+        {
+            method: 'connectToken',
+            call: (r) => r.accounting.connectToken('netsuite', { account_id: 'acct-42', access_token: 'tok_1' }),
+            verb: 'post',
+            path: '/v1/accounting/connect-token/netsuite',
+            body: { account_id: 'acct-42', access_token: 'tok_1' },
+        },
+        {
+            method: 'connectToken (tally, no credentials)',
+            call: (r) => r.accounting.connectToken('tally'),
+            verb: 'post',
+            path: '/v1/accounting/connect-token/tally',
+        },
+        {
+            method: 'disconnect',
+            call: (r) => r.accounting.disconnect('conn_1'),
+            verb: 'delete',
+            path: '/v1/accounting/connections/conn_1',
+        },
+        { method: 'sync', call: (r) => r.accounting.sync(), verb: 'post', path: '/v1/accounting/sync' },
+        { method: 'syncStatus', call: (r) => r.accounting.syncStatus(), verb: 'get', path: '/v1/accounting/sync/status' },
+    ],
+
+    virtualAccounts: [
+        {
+            method: 'create',
+            call: (r) => r.virtualAccounts.create({ customer_id: 'cus_1', invoice_id: 'inv_1', amount: 500000 }),
+            verb: 'post',
+            path: '/v1/virtual-accounts',
+            body: { customer_id: 'cus_1', invoice_id: 'inv_1', amount: 500000 },
+        },
+        { method: 'list', call: (r) => r.virtualAccounts.list(), verb: 'get', path: '/v1/virtual-accounts' },
+    ],
+
+    offlinePayments: [
+        {
+            method: 'record',
+            call: (r) =>
+                r.offlinePayments.record({
+                    customer_id: 'cus_1',
+                    invoice_id: 'inv_1',
+                    payment_type: 'bank_transfer',
+                    amount: 500000,
+                    reference_number: 'NEFT-123',
+                }),
+            verb: 'post',
+            path: '/v1/payments/offline',
+            body: {
+                customer_id: 'cus_1',
+                invoice_id: 'inv_1',
+                payment_type: 'bank_transfer',
+                amount: 500000,
+                reference_number: 'NEFT-123',
+            },
+        },
+        { method: 'list', call: (r) => r.offlinePayments.list(), verb: 'get', path: '/v1/payments/offline' },
+    ],
+
+    churn: [
+        {
+            method: 'highRisk',
+            call: (r) => r.churn.highRisk({ threshold: 80 }),
+            verb: 'get',
+            path: '/v1/churn/high-risk',
+            params: { threshold: 80 },
+        },
+        { method: 'alerts', call: (r) => r.churn.alerts(), verb: 'get', path: '/v1/churn/alerts' },
+        {
+            method: 'acknowledgeAlert',
+            call: (r) => r.churn.acknowledgeAlert('ca_1'),
+            verb: 'post',
+            path: '/v1/churn/alerts/ca_1/ack',
+        },
+    ],
+
+    cancelFlows: [
+        {
+            method: 'create',
+            call: (r) => r.cancelFlows.create({ name: 'Default save flow', is_default: true, cooldown_days: 30 }),
+            verb: 'post',
+            path: '/v1/cancel-flows',
+            body: { name: 'Default save flow', is_default: true, cooldown_days: 30 },
+        },
+        { method: 'list', call: (r) => r.cancelFlows.list(), verb: 'get', path: '/v1/cancel-flows' },
+        { method: 'get', call: (r) => r.cancelFlows.get('cf_1'), verb: 'get', path: '/v1/cancel-flows/cf_1' },
+        {
+            method: 'update',
+            call: (r) => r.cancelFlows.update('cf_1', { is_active: false }),
+            verb: 'put',
+            path: '/v1/cancel-flows/cf_1',
+            body: { is_active: false },
+        },
+        {
+            method: 'addStep',
+            call: (r) => r.cancelFlows.addStep('cf_1', { step_order: 1, step_type: 'survey' }),
+            verb: 'post',
+            path: '/v1/cancel-flows/cf_1/steps',
+            body: { step_order: 1, step_type: 'survey' },
+        },
+        {
+            method: 'updateStep',
+            call: (r) => r.cancelFlows.updateStep('cfs_1', { step_order: 2, step_type: 'offer' }),
+            verb: 'put',
+            path: '/v1/cancel-flows/steps/cfs_1',
+            body: { step_order: 2, step_type: 'offer' },
+        },
+        { method: 'deleteStep', call: (r) => r.cancelFlows.deleteStep('cfs_1'), verb: 'delete', path: '/v1/cancel-flows/steps/cfs_1' },
+        {
+            method: 'startSession',
+            call: (r) => r.cancelFlows.startSession({ customer_id: 'cus_1', subscription_id: 'sub_1' }),
+            verb: 'post',
+            path: '/v1/cancel-flows/sessions/start',
+            body: { customer_id: 'cus_1', subscription_id: 'sub_1' },
+        },
+        {
+            method: 'getSession',
+            call: (r) => r.cancelFlows.getSession('cfsess_1'),
+            verb: 'get',
+            path: '/v1/cancel-flows/sessions/cfsess_1',
+        },
+        {
+            method: 'submitStep',
+            call: (r) => r.cancelFlows.submitStep('cfsess_1', { step_index: 0, response: { reason: 'too_expensive' } }),
+            verb: 'post',
+            path: '/v1/cancel-flows/sessions/cfsess_1/submit',
+            body: { step_index: 0, response: { reason: 'too_expensive' } },
+        },
+        {
+            method: 'stats',
+            call: (r) => r.cancelFlows.stats('cf_1'),
+            verb: 'get',
+            path: '/v1/cancel-flows/stats',
+            params: { flow_id: 'cf_1' },
+        },
+    ],
+
+    dunningCampaigns: [
+        {
+            method: 'create',
+            call: (r) => r.dunningCampaigns.create({ name: 'Payment recovery', trigger_event: 'payment_failed' }),
+            verb: 'post',
+            path: '/v1/dunning-campaigns',
+            body: { name: 'Payment recovery', trigger_event: 'payment_failed' },
+        },
+        { method: 'list', call: (r) => r.dunningCampaigns.list(), verb: 'get', path: '/v1/dunning-campaigns' },
+        { method: 'get', call: (r) => r.dunningCampaigns.get('dc_1'), verb: 'get', path: '/v1/dunning-campaigns/dc_1' },
+        {
+            method: 'update',
+            call: (r) => r.dunningCampaigns.update('dc_1', { is_active: true }),
+            verb: 'put',
+            path: '/v1/dunning-campaigns/dc_1',
+            body: { is_active: true },
+        },
+        {
+            method: 'addStep',
+            call: (r) =>
+                r.dunningCampaigns.addStep('dc_1', { step_order: 1, channel: 'email', delay_hours: 24, is_payment_wall: false }),
+            verb: 'post',
+            path: '/v1/dunning-campaigns/dc_1/steps',
+            body: { step_order: 1, channel: 'email', delay_hours: 24, is_payment_wall: false },
+        },
+        {
+            method: 'updateStep',
+            call: (r) => r.dunningCampaigns.updateStep('dcs_1', { delay_hours: 48 }),
+            verb: 'put',
+            path: '/v1/dunning-campaigns/steps/dcs_1',
+            body: { delay_hours: 48 },
+        },
+        {
+            method: 'deleteStep',
+            call: (r) => r.dunningCampaigns.deleteStep('dcs_1'),
+            verb: 'delete',
+            path: '/v1/dunning-campaigns/steps/dcs_1',
         },
     ],
 };
