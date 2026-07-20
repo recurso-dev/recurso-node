@@ -180,6 +180,11 @@ export interface UsageEventInput {
      * (subscription, transaction_id) collapses to the original.
      */
     transaction_id?: string;
+    /**
+     * Optional per-event exact price in minor units (non-negative). A
+     * `dynamic` charge bills the sum of these over the period.
+     */
+    dynamic_amount?: number;
 }
 
 /** Payload for creating or updating a billable metric. */
@@ -195,11 +200,20 @@ export interface BillableMetricInput {
 /** One usage charge in a plan's charge set (PUT replace semantics). */
 export interface ChargeInput {
     metric_id: string;
-    charge_model: 'per_unit' | 'graduated' | 'volume' | 'package';
+    charge_model:
+        | 'per_unit'
+        | 'graduated'
+        | 'volume'
+        | 'package'
+        | 'percentage'
+        | 'graduated_percentage'
+        | 'dynamic';
     /**
      * Pricing per ISO currency code. Rates (`unit_amount`) are decimal
      * strings in MAJOR currency units (e.g. "0.0035"); package/flat amounts
-     * are integers in minor units.
+     * are integers in minor units. `percentage` uses `rate` + optional
+     * fixed_amount/free_units/min_amount/max_amount; `dynamic` carries no
+     * pricing (the price is supplied per event as dynamic_amount).
      */
     amounts: Record<string, ChargeAmounts>;
     hsn_code?: string;
