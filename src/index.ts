@@ -192,9 +192,28 @@ export interface BillableMetricInput {
     name: string;
     /** Doubles as the usage event dimension; immutable after create. */
     code: string;
-    aggregation_type: 'count' | 'sum' | 'max' | 'unique' | 'latest' | 'percentile';
-    /** Required for `unique` (the event property to count), forbidden otherwise. */
+    aggregation_type:
+        | 'count'
+        | 'sum'
+        | 'max'
+        | 'unique'
+        | 'latest'
+        | 'percentile'
+        /** Time-weighted average of a running level from per-event signed deltas. */
+        | 'weighted_sum'
+        /** Per-event expression (see `expression`), summed over the period. */
+        | 'custom';
+    /**
+     * Required for `unique` (the event property to count) and `percentile`
+     * (the percentile 1-99), forbidden otherwise.
+     */
     field_name?: string;
+    /**
+     * Required for `custom`: a sandboxed per-event formula over `quantity` and
+     * numeric `properties.*` (e.g. `quantity * properties.multiplier`), summed
+     * over the period. Forbidden for every other aggregation.
+     */
+    expression?: string;
 }
 
 /** One usage charge in a plan's charge set (PUT replace semantics). */
