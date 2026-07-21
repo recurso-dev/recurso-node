@@ -3907,8 +3907,10 @@ export interface components {
              * @description Inclusive upper unit bound; null = unbounded (last tier only).
              */
             up_to: number | null;
-            /** @description Per-unit rate as a decimal string in MAJOR currency units (e.g. "0.0035"). */
-            unit_amount: string;
+            /** @description (graduated/volume) per-unit rate as a decimal string in MAJOR currency units (e.g. "0.0035"). */
+            unit_amount?: string;
+            /** @description (graduated_percentage) percent applied to this band of the base, decimal string e.g. "2.5". */
+            rate?: string;
             /**
              * Format: int64
              * @description Minor units, added once when any unit lands in the tier.
@@ -3929,8 +3931,30 @@ export interface components {
              * @description (package) units per bundle; partial bundles round up.
              */
             package_size?: number;
-            /** @description (graduated/volume) price bands. */
+            /** @description (graduated/volume/graduated_percentage) price bands. */
             tiers?: components["schemas"]["ChargeTier"][];
+            /** @description (percentage) percent applied to the base, decimal string e.g. "2.5". */
+            rate?: string;
+            /**
+             * Format: int64
+             * @description (percentage) flat fee in minor units added after the percentage.
+             */
+            fixed_amount?: number;
+            /**
+             * Format: int64
+             * @description (percentage) base units exempt from the percentage, deducted first.
+             */
+            free_units?: number;
+            /**
+             * Format: int64
+             * @description (percentage) floor on the line in minor units; 0 = no floor.
+             */
+            min_amount?: number;
+            /**
+             * Format: int64
+             * @description (percentage) cap on the line in minor units; 0 = no cap.
+             */
+            max_amount?: number;
         };
         /** @description Usage pricing for one billable metric on a plan. Usage is billed in arrears at period close; flat plan prices stay on the plan. */
         Charge: {
@@ -3941,7 +3965,7 @@ export interface components {
             /** Format: uuid */
             metric_id?: string;
             /** @enum {string} */
-            charge_model?: "per_unit" | "graduated" | "volume" | "package";
+            charge_model?: "per_unit" | "graduated" | "volume" | "package" | "percentage" | "graduated_percentage" | "dynamic";
             /** @description Pricing per ISO currency code. */
             amounts?: {
                 [key: string]: components["schemas"]["ChargeAmounts"];
@@ -3953,7 +3977,7 @@ export interface components {
             /** Format: uuid */
             metric_id: string;
             /** @enum {string} */
-            charge_model: "per_unit" | "graduated" | "volume" | "package";
+            charge_model: "per_unit" | "graduated" | "volume" | "package" | "percentage" | "graduated_percentage" | "dynamic";
             amounts: {
                 [key: string]: components["schemas"]["ChargeAmounts"];
             };
@@ -6848,6 +6872,11 @@ export interface operations {
                     };
                     /** @description Optional idempotency key: a retried event with the same (subscription, transaction_id) collapses to the original (200 with status "duplicate" and the original event_id). */
                     transaction_id?: string;
+                    /**
+                     * Format: int64
+                     * @description Optional per-event exact price in minor units (non-negative). A `dynamic` charge bills the sum of these over the period; other charge models ignore it.
+                     */
+                    dynamic_amount?: number;
                 };
             };
         };
@@ -6893,6 +6922,8 @@ export interface operations {
                             [key: string]: string;
                         };
                         transaction_id?: string;
+                        /** Format: int64 */
+                        dynamic_amount?: number;
                     }[];
                 };
             };
