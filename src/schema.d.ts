@@ -3884,9 +3884,11 @@ export interface components {
             name?: string;
             code?: string;
             /** @enum {string} */
-            aggregation_type?: "count" | "sum" | "max" | "unique" | "latest" | "percentile";
-            /** @description Event property counted by the `unique` aggregation. */
+            aggregation_type?: "count" | "sum" | "max" | "unique" | "latest" | "percentile" | "weighted_sum" | "custom";
+            /** @description Event property counted by `unique`, or the percentile 1-99 for `percentile`. */
             field_name?: string;
+            /** @description Sandboxed per-event formula for the `custom` aggregation (summed over the period); empty otherwise. */
+            expression?: string;
             /** Format: date-time */
             created_at?: string;
             /** Format: date-time */
@@ -3897,9 +3899,11 @@ export interface components {
             /** @description Doubles as the usage event dimension; immutable after create. */
             code: string;
             /** @enum {string} */
-            aggregation_type: "count" | "sum" | "max" | "unique" | "latest" | "percentile";
-            /** @description Required for `unique`, forbidden otherwise. */
+            aggregation_type: "count" | "sum" | "max" | "unique" | "latest" | "percentile" | "weighted_sum" | "custom";
+            /** @description Required for `unique` (property) and `percentile` (1-99); forbidden otherwise. */
             field_name?: string;
+            /** @description Required for `custom` (a per-event formula over `quantity`/`properties.*`), forbidden otherwise. */
+            expression?: string;
         };
         ChargeTier: {
             /**
