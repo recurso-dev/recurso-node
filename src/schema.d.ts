@@ -3884,7 +3884,7 @@ export interface components {
             name?: string;
             code?: string;
             /** @enum {string} */
-            aggregation_type?: "count" | "sum" | "max" | "unique";
+            aggregation_type?: "count" | "sum" | "max" | "unique" | "latest" | "percentile";
             /** @description Event property counted by the `unique` aggregation. */
             field_name?: string;
             /** Format: date-time */
@@ -3897,7 +3897,7 @@ export interface components {
             /** @description Doubles as the usage event dimension; immutable after create. */
             code: string;
             /** @enum {string} */
-            aggregation_type: "count" | "sum" | "max" | "unique";
+            aggregation_type: "count" | "sum" | "max" | "unique" | "latest" | "percentile";
             /** @description Required for `unique`, forbidden otherwise. */
             field_name?: string;
         };
@@ -3970,6 +3970,8 @@ export interface components {
             amounts?: {
                 [key: string]: components["schemas"]["ChargeAmounts"];
             };
+            /** @description Rate per usage event at ingestion (unbilled charge, folded onto the next invoice) instead of at period close. per_unit/percentage/dynamic only. */
+            pay_in_advance?: boolean;
             hsn_code?: string;
             metric?: components["schemas"]["BillableMetric"];
         };
@@ -3981,6 +3983,8 @@ export interface components {
             amounts: {
                 [key: string]: components["schemas"]["ChargeAmounts"];
             };
+            /** @description Non-cumulative models only (per_unit/percentage/dynamic). */
+            pay_in_advance?: boolean;
             hsn_code?: string;
         };
         /** @description One immutable record of a config-grade mutation. */

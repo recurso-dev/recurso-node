@@ -192,7 +192,7 @@ export interface BillableMetricInput {
     name: string;
     /** Doubles as the usage event dimension; immutable after create. */
     code: string;
-    aggregation_type: 'count' | 'sum' | 'max' | 'unique';
+    aggregation_type: 'count' | 'sum' | 'max' | 'unique' | 'latest' | 'percentile';
     /** Required for `unique` (the event property to count), forbidden otherwise. */
     field_name?: string;
 }
@@ -216,6 +216,12 @@ export interface ChargeInput {
      * pricing (the price is supplied per event as dynamic_amount).
      */
     amounts: Record<string, ChargeAmounts>;
+    /**
+     * Rate the charge per usage event at ingestion time (captured as an
+     * unbilled charge, folded onto the next invoice) instead of at period
+     * close. Only per_unit/percentage/dynamic may set it.
+     */
+    pay_in_advance?: boolean;
     hsn_code?: string;
 }
 
