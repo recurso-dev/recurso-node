@@ -306,6 +306,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/customers/{id}/credit-statement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Customer account-credit statement
+         * @description A customer's consolidated account-credit statement — spendable balance per currency/entity, every grant (credit note), the invoice draw-down history, and a per-currency rollup. Reads existing GL-backed data; the spendable balance equals the credit applier's view.
+         */
+        get: operations["getCreditStatement"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/customers": {
         parameters: {
             query?: never;
@@ -491,6 +511,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/subscriptions/{id}/bill-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate an interim progressive-usage invoice
+         * @description For a subscription with progressive billing enabled, bill the usage accrued since the last bill when it has reached the threshold (A5). The watermark guarantees no usage is billed twice. Returns the interim invoice, or 200 with data:null when nothing is due (not progressive, or below the threshold).
+         */
+        post: operations["billUsageNow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/subscriptions/{id}/advance": {
         parameters: {
             query?: never;
@@ -589,6 +629,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/invoices/{id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Email the invoice to the customer
+         * @description (Re)sends the invoice email — the customer's rendered invoice with a hosted "Pay Now" checkout link — to the customer's email on file. Invoices are also auto-emailed on generation; this is the on-demand resend. 400 if the customer has no email address.
+         */
+        post: operations["sendInvoiceEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/invoices/{id}/einvoice": {
         parameters: {
             query?: never;
@@ -643,6 +703,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/invoices/{id}/eu-einvoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get EU e-invoice (EN 16931 / UBL) status
+         * @description Returns the invoice's generated EU e-invoice — status, syntax, UBL document, delivery id/error — or data:null when none has been generated.
+         */
+        get: operations["getEUEInvoice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/invoices/{id}/eu-einvoice/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate and re-transmit the EU e-invoice
+         * @description Re-runs EN 16931 UBL generation and Access Point transmission for the invoice, recovering a generation or transmission failure. Idempotent. data:null when the tenant hasn't opted in.
+         */
+        post: operations["retryEUEInvoice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/coupons/{id}": {
         parameters: {
             query?: never;
@@ -688,7 +788,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List recent raw usage events
+         * @description Newest-first raw ingestion stream for debugging metering — "did my events actually land?". Optional customer_id and dimension filters; limit (max 200, default 50) and offset paging.
+         */
+        get: operations["listUsageEvents"];
         put?: never;
         /**
          * Record a usage event
@@ -733,6 +837,40 @@ export interface paths {
         put?: never;
         /** Create a credit note */
         post: operations["createCreditNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/credit-notes/{id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve a pending credit note */
+        post: operations["approveCreditNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/credit-notes/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject a pending credit note */
+        post: operations["rejectCreditNote"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1014,9 +1152,49 @@ export interface paths {
         };
         /**
          * Monthly recurring revenue
-         * @description Current MRR across active subscriptions. Responses are cached for up to 5 minutes.
+         * @description Current MRR across active subscriptions. Optional entity_id scopes to one legal entity; omitted = all entities (consolidated). Responses are cached for up to 5 minutes.
          */
         get: operations["getMRR"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/analytics/mrr/by-entity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * MRR broken down by legal entity
+         * @description MRR contribution of each legal entity (Multi-Entity Books), normalized to the reporting currency and sorted by MRR descending. Every entity appears (zero if it has no active MRR); a single-entity tenant gets one row. Cached for up to 5 minutes.
+         */
+        get: operations["getMRRByEntity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/analytics/entities-overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Multi-entity control tower (MRR + open AR per entity)
+         * @description Every legal entity with its MRR and open receivables side by side, plus consolidated totals, normalized to the reporting currency. Empty for single-entity tenants (use the consolidated dashboards). Cached up to 5m.
+         */
+        get: operations["getEntitiesOverview"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1054,7 +1232,7 @@ export interface paths {
         };
         /**
          * Invoice aging
-         * @description Outstanding receivables bucketed by how far past due each open invoice is (current / 1-30 / 31-60 / 61-90 / 90+), normalized to the reporting currency.
+         * @description Outstanding receivables bucketed by how far past due each open invoice is (current / 1-30 / 31-60 / 61-90 / 90+), normalized to the reporting currency. Optional entity_id scopes to one legal entity; omitted = all entities.
          */
         get: operations["getInvoiceAging"];
         put?: never;
@@ -1291,6 +1469,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/webhooks/razorpay/{connID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Razorpay webhook receiver (per-connection, BYO)
+         * @description Per-connection variant of the Razorpay webhook receiver for tenants who
+         *     connected their own Razorpay account. The event is verified with THAT
+         *     connection's own signing secret (resolved from `connID`) before the
+         *     payload is trusted. Called by Razorpay, not by API consumers.
+         */
+        post: operations["handleRazorpayWebhookForConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/stripe/{connID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Stripe webhook receiver (per-connection, BYO)
+         * @description Per-connection variant of the Stripe webhook receiver for tenants who
+         *     connected their own Stripe account. The event is verified with THAT
+         *     connection's own signing secret (resolved from `connID`) before the
+         *     payload is trusted. Called by Stripe, not by API consumers.
+         */
+        post: operations["handleStripeWebhookForConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/invoices/{id}/preview": {
         parameters: {
             query?: never;
@@ -1476,6 +1700,26 @@ export interface paths {
          * @description Creates a Stripe SetupIntent for the authenticated portal customer and returns the client secret the Payment Element confirms. Card data goes browser→Stripe directly — no PAN ever reaches Recurso (PCI SAQ-A). Reports 503 on deployments without Stripe.
          */
         post: operations["portalStartPaymentMethodSetup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/portal/api/payment-method/bank-setup-intent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start an ACH bank-account setup (Stripe Financial Connections)
+         * @description Creates a us_bank_account SetupIntent via Stripe Financial Connections for the authenticated portal customer (instant bank verification) and returns the client secret the browser's collectBankAccountForSetup confirms, plus the publishable key. Bank data goes browser→Stripe — none reaches Recurso. The saved account is finalized by /portal/api/payment-method/confirm. 503 where Stripe/ACH is unavailable.
+         */
+        post: operations["portalStartBankAccountSetup"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1676,6 +1920,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/collections/invoices/{id}/retry-now": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry a failing invoice now
+         * @description Requeue a past-due invoice for an immediate smart-retry attempt. Refused (409) for a paused, mandate, or already-settling invoice; 404 if not found.
+         */
+        post: operations["collectionsRetryNow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/collections/invoices/{id}/pause": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pause or resume automated dunning on an invoice */
+        post: operations["collectionsPauseDunning"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/collections/invoices/{id}/mark-uncollectible": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Manually write off an invoice as uncollectible
+         * @description Operator-initiated write-off (status change only, no ledger leg — matching the automated path). Only flips a still-collectible invoice.
+         */
+        post: operations["collectionsMarkUncollectible"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/collections/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Collections worklist of currently-failing invoices
+         * @description Operator-facing list of invoices in a recovery state (past_due or uncollectible with a balance owing), each with its customer, amount remaining, days overdue, retry count, last failure code, next scheduled retry, which engine owns it, and the latest ACH attempt status. Read-only.
+         */
+        get: operations["getCollectionsQueue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/analytics/ask": {
         parameters: {
             query?: never;
@@ -1803,7 +2124,10 @@ export interface paths {
          * Trial balance
          * @description Every account with its posted debit/credit totals, its balance on the
          *     account's normal side, an abnormal-sign flag, and the double-entry
-         *     invariant (total debits == total credits). Read-only.
+         *     invariant (total debits == total credits). Read-only. Each line is
+         *     tagged with its legal entity (Multi-Entity Books); pass `entity_id` to
+         *     scope to one entity, or `consolidated=true` to roll every entity's
+         *     accounts up by code into one tenant-wide view.
          */
         get: operations["getTrialBalance"];
         put?: never;
@@ -1824,7 +2148,8 @@ export interface paths {
         /**
          * Export the general ledger (CSV)
          * @description Every posted transaction for the tenant, flattened with both account
-         *     codes/names, amount, and provenance, as a CSV download. Read-only.
+         *     codes/names, amount, and provenance, as a CSV download. Read-only. Pass
+         *     `entity_id` to scope the export to one legal entity's ledger.
          */
         get: operations["exportGeneralLedger"];
         put?: never;
@@ -1874,6 +2199,32 @@ export interface paths {
          *     reason in `tb_skip_reason`.
          */
         get: operations["runReconciliation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/finance/close-pack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Month-end close pack
+         * @description One read-only artifact for a calendar month: the trial balance, an
+         *     on-demand reconciliation report, the Deferred Revenue rollforward (with
+         *     the schedule-sourced recognition view when rev-rec is wired), a pointer
+         *     to the GL CSV export, and a `ready_to_close` verdict. The period is
+         *     ready to close when the trial balance is in balance and reconciliation
+         *     finds zero discrepancies; otherwise `blockers` lists why. Nothing is
+         *     persisted — closing the period stays a human decision.
+         */
+        get: operations["getClosePack"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2007,6 +2358,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/settings/tax/registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List US sales-tax registrations
+         * @description Returns the tenant's US sales-tax registrations — where they hold (or are pending) a permit to collect. Pairs with nexus to surface gaps (nexus but not registered).
+         */
+        get: operations["getTaxRegistrations"];
+        /**
+         * Set US sales-tax registrations
+         * @description Replaces the tenant's entire registration set. Owner/admin only.
+         */
+        put: operations["setTaxRegistrations"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/settings/tax/nexus": {
         parameters: {
             query?: never;
@@ -2024,6 +2399,26 @@ export interface paths {
          * @description Replaces the tenant's entire nexus set. Owner/admin only.
          */
         put: operations["setTaxNexus"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/settings/tax/liability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Per-state US sales-tax liability report
+         * @description Per-state US sales-tax liability for a filing period: gross sales, the taxable/non-taxable split (by whether tax was collected), tax collected, invoice count, and whether the tenant has nexus in each state. Period is from+to (to exclusive) or year (defaults to the current calendar year). Scoped to US buyers, USD, non-void/draft invoices — ties to the nexus figures. Sales split into taxable (tax collected), exempt (a customer exemption applied), and non-taxable (no-nexus / below-threshold).
+         */
+        get: operations["getTaxLiabilityReport"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -2089,6 +2484,124 @@ export interface paths {
          * @description Validates that saved IRP credentials are complete and enabled.
          */
         post: operations["testIRPConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/settings/eu-einvoice": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get EU e-invoicing configuration
+         * @description Returns the tenant's EU e-invoicing config (opt-in flag + EN 16931 seller identity), or an empty disabled default when none is set.
+         */
+        get: operations["getEUEInvoiceConfig"];
+        /**
+         * Create or update EU e-invoicing config
+         * @description Upserts the tenant's EU e-invoicing config. Setting `enabled` true requires a complete seller identity (`legal_name`, `vat_number`, 2-letter `country_code`) — the fields every generated EN 16931 document needs.
+         */
+        put: operations["updateEUEInvoiceConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/settings/tax/us": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get US tax identity (W-9)
+         * @description Returns the tenant's US tax identity (legal name, EIN, address) shown on US sales-tax invoices, or an empty default when none is set.
+         */
+        get: operations["getUSTaxConfig"];
+        /**
+         * Create or update US tax identity (W-9)
+         * @description Upserts the tenant's US tax identity (legal name, EIN, address). Presentation only — it does not affect tax computation.
+         */
+        put: operations["updateUSTaxConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/entities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List legal entities
+         * @description Returns the tenant's legal entities (Multi-Entity Books), primary first. Every tenant has exactly one primary entity.
+         */
+        get: operations["listEntities"];
+        put?: never;
+        /**
+         * Create a legal entity
+         * @description Creates a new (non-primary) entity. Its ledger id and invoice-number sequence are allocated automatically.
+         */
+        post: operations["createEntity"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/entities/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a legal entity */
+        get: operations["getEntity"];
+        /** Update a legal entity */
+        put: operations["updateEntity"];
+        post?: never;
+        /**
+         * Delete a legal entity
+         * @description Deletes a non-primary entity. The primary entity cannot be deleted.
+         */
+        delete: operations["deleteEntity"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/settings/mcp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get MCP server settings
+         * @description Returns the tenant's MCP opt-in — currently the Tier-3 (money-path) toggle. Defaults to disabled when never set.
+         */
+        get: operations["getMCPSettings"];
+        /**
+         * Update MCP server settings
+         * @description Upserts the tenant's MCP opt-in. Enabling `tier3_enabled` lets AI agents run money-path / destructive MCP tools (convert quote to invoice, cancel subscription, issue credit note, top up wallet, …) against this tenant.
+         */
+        put: operations["updateMCPSettings"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2939,6 +3452,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/analytics/dunning/timing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Best-time-to-retry insights
+         * @description Historical retry success rate by hour-of-day (0-23) and day-of-week (0-6, Sunday=0), in UTC, plus the best-performing hour and day among buckets with enough samples. Read-only; does not change the live retry bandit. Cached for up to 5 minutes.
+         */
+        get: operations["getDunningTiming"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/analytics/collections/funnel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Collections recovery funnel
+         * @description The failed → resolved journey of billed revenue: past_due (still being chased), uncollectible (written off), and recovered (all-time), FX-normalized to the reporting currency, with a recovery rate over concluded cases. Cached for up to 5 minutes.
+         */
+        get: operations["getCollectionsFunnel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/analytics/collections/failures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Failure-reason breakdown by money at risk
+         * @description Currently-failing invoices grouped by their last failure code, ranked by the amount of billed revenue at risk (FX-normalized). Cached for up to 5 minutes.
+         */
+        get: operations["getCollectionsFailures"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/plans/{id}/entitlements": {
         parameters: {
             query?: never;
@@ -2972,7 +3545,7 @@ export interface paths {
         put?: never;
         /**
          * Create a billable metric
-         * @description A metric is a tenant-defined meter over usage events; its `code` doubles as the event `dimension` it aggregates. Aggregations: `count`, `sum`, `max`, `unique` (distinct values of the event property named by `field_name`).
+         * @description A metric is a tenant-defined meter over usage events; its `code` doubles as the event `dimension` it aggregates. Aggregations: `count`, `sum`, `max`, `unique` (distinct values of the event property named by `field_name`), `latest` (most recent event's quantity), and `percentile` (the p-th percentile of quantities, with `field_name` carrying the percentile 1-99, e.g. "95").
          */
         post: operations["createBillableMetric"];
         delete?: never;
@@ -3018,6 +3591,26 @@ export interface paths {
          */
         put: operations["setPlanCharges"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/plans/{id}/simulate-charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Simulate a proposed charge set (read-only)
+         * @description Rates a PROPOSED charge set against sample usage and returns the rated lines, the subtotal, and a balanced general-ledger preview (DR Accounts Receivable / CR Revenue). Pre-tax — GST/tax is resolved at invoice time. Nothing is persisted and no ledger legs are posted. Sample usage comes from `usage` (per metric_id); metrics without an explicit entry fall back to `subscription_id`'s current-period usage when given.
+         */
+        post: operations["simulateCharges"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3093,7 +3686,11 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /**
+         * Edit a usage alert's threshold
+         * @description Re-aims an existing alert at a new threshold (type and value). Subscription and metric are the alert's identity — to change those, delete and re-create. Editing resets the per-period fired dedup so the new threshold can fire in the current billing period.
+         */
+        put: operations["updateUsageAlert"];
         post?: never;
         /** Delete a usage alert */
         delete: operations["deleteUsageAlert"];
@@ -3134,7 +3731,7 @@ export interface paths {
         put?: never;
         /**
          * Create a prepaid wallet
-         * @description One wallet per customer+currency, holding money-denominated balance (minor units). At invoice time the wallet drains FIRST — before adjustment credit notes and before the payment gateway.
+         * @description One wallet per customer+entity+currency, holding money-denominated balance (minor units). At invoice time the wallet drains FIRST — before adjustment credit notes and before the payment gateway. A wallet is spendable only on its own entity's invoices.
          */
         post: operations["createWallet"];
         delete?: never;
@@ -3174,6 +3771,26 @@ export interface paths {
          * @description `manual` records money already received (bank transfer / offline); `promotional` grants credit with no money movement and may carry an `expires_at`. Every top-up posts balanced ledger legs.
          */
         post: operations["topUpWallet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/wallets/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Close a wallet and settle its balance
+         * @description Closes the wallet: paid residue is refunded to the customer, promotional residue is forfeited (non-refundable), and the ledger legs are posted (DR Customer Credit / CR Cash for the refund; DR Customer Credit / CR Credits for the forfeit). A closed wallet accepts no further top-ups or drains. `refunded` is the amount owed back to the customer; the actual money return is handled out of band, like a manual refund.
+         */
+        post: operations["closeWallet"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3623,6 +4240,338 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/gateway-connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the tenant's BYO payment-gateway connections
+         * @description Returns the tenant's active Stripe/Razorpay connections (secret-free —
+         *     only the public key, mode, and whether a webhook secret is set) and
+         *     whether the credential vault is available.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Connections and vault status. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: {
+                                connections?: components["schemas"]["GatewayConnectionView"][];
+                                vault_ready?: boolean;
+                            };
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        put?: never;
+        /**
+         * Connect (or replace) a payment gateway
+         * @description Stores the tenant's own gateway credentials, sealed at rest. Secrets are
+         *     write-only and never returned. Replaces any existing active connection
+         *     for the provider. Owner/admin only.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        provider: "stripe" | "razorpay";
+                        /** @enum {string} */
+                        mode?: "test" | "live";
+                        /** @description Razorpay key_id / Stripe publishable key (not secret). */
+                        public_key?: string;
+                        secret_key: string;
+                        /** @description Optional; can be set later once the webhook URL is known. */
+                        webhook_secret?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Connected. */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: components["schemas"]["GatewayConnectionView"];
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                /** @description Credential vault unavailable (GATEWAY_ENCRYPTION_KEY not set). */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/gateway-connections/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Disconnect a payment gateway
+         * @description Soft-disconnects the tenant's active connection for a provider. Owner/admin only.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    provider: "stripe" | "razorpay";
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Disconnected. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/gateway-connections/{provider}/webhook-secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the webhook signing secret on the active connection
+         * @description Updates the webhook secret in place (id unchanged, so the per-connection
+         *     webhook URL stays stable). Two-step connect: create the webhook in the
+         *     gateway console using the per-connection URL, then paste the secret here.
+         *     Owner/admin only.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    provider: "stripe" | "razorpay";
+                };
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        webhook_secret?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Updated. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integration-connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the tenant's BYO tax/CRM/storage integrations
+         * @description Returns the tenant's active tax (TaxJar/Avalara), CRM (HubSpot), and
+         *     storage (S3/MinIO) connections — secret-free (only non-secret config like
+         *     region/bucket, and whether secrets are set) — plus vault availability.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Connections and vault status. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: {
+                                connections?: components["schemas"]["IntegrationConnectionView"][];
+                                vault_ready?: boolean;
+                            };
+                        };
+                    };
+                };
+                401: components["responses"]["Unauthorized"];
+            };
+        };
+        put?: never;
+        /**
+         * Connect (or replace) a tax/CRM/storage integration
+         * @description Stores the tenant's own integration credentials, sealed at rest. Secrets
+         *     are write-only. Replaces any existing active connection for the
+         *     (category, provider). Owner/admin only.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        category: "tax" | "crm" | "storage";
+                        /** @description taxjar / avalara / hubspot / s3. */
+                        provider: string;
+                        /** @description Provider config (e.g. api_key; or bucket/region/keys for s3). */
+                        config: {
+                            [key: string]: string;
+                        };
+                    };
+                };
+            };
+            responses: {
+                /** @description Connected. */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            data?: components["schemas"]["IntegrationConnectionView"];
+                        };
+                    };
+                };
+                400: components["responses"]["BadRequest"];
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                /** @description Credential vault unavailable (GATEWAY_ENCRYPTION_KEY not set). */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/integration-connections/{category}/{provider}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Disconnect a tax/CRM/storage integration
+         * @description Soft-disconnects the tenant's active connection. Owner/admin only.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    category: "tax" | "crm" | "storage";
+                    provider: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Disconnected. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                401: components["responses"]["Unauthorized"];
+                403: components["responses"]["Forbidden"];
+                404: components["responses"]["NotFound"];
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/sso/connection": {
         parameters: {
             query?: never;
@@ -3855,6 +4804,40 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Secret-free projection of a BYO tax/CRM/storage connection. */
+        IntegrationConnectionView: {
+            /** Format: uuid */
+            id?: string;
+            /** @enum {string} */
+            category?: "tax" | "crm" | "storage";
+            provider?: string;
+            /** @description Non-secret config fields only (e.g. region, bucket, endpoints). */
+            config?: {
+                [key: string]: string;
+            };
+            has_secrets?: boolean;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        /** @description Secret-free projection of a BYO gateway connection. */
+        GatewayConnectionView: {
+            /** Format: uuid */
+            id?: string;
+            /** @enum {string} */
+            provider?: "stripe" | "razorpay";
+            /** @enum {string} */
+            mode?: "test" | "live";
+            public_key?: string;
+            has_webhook_secret?: boolean;
+            /** @description Append to the API origin for the gateway console (e.g. /webhooks/stripe/{id}). */
+            webhook_path?: string;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
         Entitlement: {
             /** Format: uuid */
             id?: string;
@@ -3884,10 +4867,10 @@ export interface components {
             name?: string;
             code?: string;
             /** @enum {string} */
-            aggregation_type?: "count" | "sum" | "max" | "unique" | "latest" | "percentile" | "weighted_sum" | "custom";
+            aggregation_type?: "count" | "sum" | "max" | "unique" | "latest" | "percentile" | "custom" | "weighted_sum";
             /** @description Event property counted by `unique`, or the percentile 1-99 for `percentile`. */
             field_name?: string;
-            /** @description Sandboxed per-event formula for the `custom` aggregation (summed over the period); empty otherwise. */
+            /** @description Sandboxed per-event formula for the `custom` aggregation (e.g. `quantity * properties.multiplier`); its results are summed over the period. Empty for every other aggregation. */
             expression?: string;
             /** Format: date-time */
             created_at?: string;
@@ -3899,10 +4882,10 @@ export interface components {
             /** @description Doubles as the usage event dimension; immutable after create. */
             code: string;
             /** @enum {string} */
-            aggregation_type: "count" | "sum" | "max" | "unique" | "latest" | "percentile" | "weighted_sum" | "custom";
-            /** @description Required for `unique` (property) and `percentile` (1-99); forbidden otherwise. */
+            aggregation_type: "count" | "sum" | "max" | "unique" | "latest" | "percentile" | "custom" | "weighted_sum";
+            /** @description Required for `unique` (property name) and `percentile` (1-99); forbidden otherwise. */
             field_name?: string;
-            /** @description Required for `custom` (a per-event formula over `quantity`/`properties.*`), forbidden otherwise. */
+            /** @description Required for the `custom` aggregation, forbidden otherwise. A sandboxed per-event formula reading `quantity` and `properties` (e.g. `quantity * properties.multiplier`); results are summed. */
             expression?: string;
         };
         ChargeTier: {
@@ -3935,7 +4918,7 @@ export interface components {
              * @description (package) units per bundle; partial bundles round up.
              */
             package_size?: number;
-            /** @description (graduated/volume/graduated_percentage) price bands. */
+            /** @description (graduated/volume) price bands. */
             tiers?: components["schemas"]["ChargeTier"][];
             /** @description (percentage) percent applied to the base, decimal string e.g. "2.5". */
             rate?: string;
@@ -3974,10 +4957,20 @@ export interface components {
             amounts?: {
                 [key: string]: components["schemas"]["ChargeAmounts"];
             };
-            /** @description Rate per usage event at ingestion (unbilled charge, folded onto the next invoice) instead of at period close. per_unit/percentage/dynamic only. */
+            /** @description (A4) An event property this charge prices dimensionally; empty = unfiltered. Each `filters` entry prices one value of this property; events matching none use `amounts` (the default). */
+            filter_key?: string;
+            filters?: components["schemas"]["ChargeFilterValue"][];
+            /** @description Rate this charge per usage event at ingestion time (captured as an unbilled charge, folded onto the next invoice) instead of at period close. Only per_unit/percentage/dynamic may set it. */
             pay_in_advance?: boolean;
             hsn_code?: string;
             metric?: components["schemas"]["BillableMetric"];
+        };
+        ChargeFilterValue: {
+            /** @description The property value this band prices. */
+            value: string;
+            amounts: {
+                [key: string]: components["schemas"]["ChargeAmounts"];
+            };
         };
         ChargeInput: {
             /** Format: uuid */
@@ -3987,6 +4980,9 @@ export interface components {
             amounts: {
                 [key: string]: components["schemas"]["ChargeAmounts"];
             };
+            /** @description (A4) event property for dimensional pricing. */
+            filter_key?: string;
+            filters?: components["schemas"]["ChargeFilterValue"][];
             /** @description Non-cumulative models only (per_unit/percentage/dynamic). */
             pay_in_advance?: boolean;
             hsn_code?: string;
@@ -4030,6 +5026,8 @@ export interface components {
         Wallet: {
             /** Format: uuid */
             id?: string;
+            /** Format: uuid */
+            entity_id?: string;
             /** Format: uuid */
             customer_id?: string;
             currency?: string;
@@ -4257,6 +5255,17 @@ export interface components {
             tax_type?: "business" | "consumer";
             /** @description Indian state code for GST place of supply. */
             place_of_supply?: string;
+            /** @description US sales-tax exemption status (D2). When true, the number and code are passed to the tax provider. */
+            tax_exempt?: boolean;
+            /** @description Exemption/resale certificate number on file. */
+            tax_exemption_number?: string;
+            /** @description Provider entity-use / customer-usage code (e.g. Avalara "A"); also the exemption reason. */
+            tax_exemption_code?: string;
+            /**
+             * Format: date
+             * @description Exemption certificate expiry (YYYY-MM-DD). Honored through this date; past it the buyer is charged tax again. Null = no expiry on file (Inc 2).
+             */
+            tax_exemption_expires_at?: string | null;
             line1?: string;
             city?: string;
             state?: string;
@@ -4287,6 +5296,11 @@ export interface components {
             gstin?: string | null;
             tax_type?: string;
             place_of_supply?: string | null;
+            tax_exempt?: boolean;
+            tax_exemption_number?: string;
+            tax_exemption_code?: string;
+            /** Format: date */
+            tax_exemption_expires_at?: string | null;
             referral_code?: string | null;
             risk_score?: number;
             risk_factors?: Record<string, never> | null;
@@ -4306,6 +5320,11 @@ export interface components {
             customer_id: string;
             /** Format: uuid */
             plan_id: string;
+            /**
+             * Format: uuid
+             * @description Multi-Entity Books: the issuing legal entity. Omit for the tenant's primary entity.
+             */
+            entity_id?: string;
             coupon_code?: string;
             /** Format: date-time */
             start_date?: string;
@@ -4419,6 +5438,11 @@ export interface components {
             tax_amount?: number;
             /** Format: int64 */
             total?: number;
+            /**
+             * @description Presentation regime (how the invoice is displayed, not how it was taxed), from the seller's jurisdiction. gst shows GSTIN/HSN/ CGST-SGST-IGST/IRN; sales_tax, vat and plain show a single tax line and hide every GST artifact. Computed at read time; not persisted.
+             * @enum {string}
+             */
+            tax_regime?: "gst" | "sales_tax" | "vat" | "plain";
             /** Format: int64 */
             igst_amount?: number;
             /** Format: int64 */
@@ -4531,6 +5555,11 @@ export interface components {
             customer_id?: string;
             /** Format: uuid */
             invoice_id?: string | null;
+            /**
+             * Format: uuid
+             * @description Legal entity that issued the credit note (Multi-Entity Books); inherits the referenced invoice's entity.
+             */
+            entity_id?: string | null;
             reference?: string | null;
             /** Format: int64 */
             amount?: number;
@@ -4541,8 +5570,13 @@ export interface components {
             balance?: number;
             currency?: string;
             /** @enum {string} */
-            status?: "issued" | "used" | "void";
+            status?: "issued" | "used" | "void" | "pending_approval" | "rejected" | "expired";
             reason?: string;
+            /**
+             * Format: date-time
+             * @description When a dated adjustment credit lapses; null = never expires.
+             */
+            expires_at?: string | null;
             /** Format: date-time */
             created_at?: string;
             /** Format: date-time */
@@ -4665,6 +5699,32 @@ export interface components {
             /** Format: date-time */
             created_at?: string;
         };
+        /** @description One legal entity's MRR contribution, in the reporting currency. */
+        MRREntityBreakdown: {
+            /** Format: uuid */
+            entity_id?: string;
+            entity_name?: string;
+            is_primary?: boolean;
+            /** Format: int64 */
+            normalized_mrr?: number;
+            /** Format: int64 */
+            arr?: number;
+            subscriptions?: number;
+        };
+        /** @description One legal entity's MRR + open AR, in the reporting currency. */
+        EntityOverviewRow: {
+            /** Format: uuid */
+            entity_id?: string;
+            entity_name?: string;
+            is_primary?: boolean;
+            /** Format: int64 */
+            mrr?: number;
+            /** Format: int64 */
+            arr?: number;
+            /** Format: int64 */
+            ar_outstanding?: number;
+            subscriptions?: number;
+        };
         MRRMetrics: {
             /** @description The reporting currency. */
             currency?: string;
@@ -4784,6 +5844,76 @@ export interface components {
             reward?: number;
             /** Format: date-time */
             created_at?: string;
+        };
+        /** @description One currently-failing invoice on the collections worklist. */
+        CollectionsQueueItem: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            customer_id?: string;
+            customer_name?: string;
+            customer_email?: string;
+            invoice_number?: string;
+            /** @enum {string} */
+            status?: "past_due" | "uncollectible";
+            currency?: string;
+            /**
+             * Format: int64
+             * @description Total minus amount paid, in minor units.
+             */
+            amount_remaining?: number;
+            /** Format: date-time */
+            due_date?: string;
+            days_overdue?: number;
+            retry_count?: number;
+            /** @description Raw gateway/ACH failure code from the last attempt, if any. */
+            last_payment_error?: string;
+            /** Format: date-time */
+            next_retry_at?: string | null;
+            /** @enum {string} */
+            managed_by?: "scheduler" | "worker" | "campaign";
+            /** @description Status of the latest payment attempt (ACH), if one exists. */
+            attempt_status?: string;
+        };
+        /** @description One stage of the recovery funnel, in the reporting currency. */
+        CollectionsBucket: {
+            count?: number;
+            /**
+             * Format: int64
+             * @description Minor units, FX-normalized to the reporting currency.
+             */
+            amount?: number;
+        };
+        /** @description The failed → resolved journey of billed revenue. */
+        CollectionsFunnel: {
+            reporting_currency?: string;
+            past_due?: components["schemas"]["CollectionsBucket"];
+            uncollectible?: components["schemas"]["CollectionsBucket"];
+            recovered?: components["schemas"]["CollectionsBucket"];
+            /** @description Windowed concluded cohort — of cases concluded (recovered or written off) in the trailing rate_window_days, the fraction recovered. */
+            recovery_rate?: number;
+            /** @description Trailing window (days) the recovery_rate is computed over. */
+            rate_window_days?: number;
+            /** @description Currencies whose amounts could not be converted into the reporting currency and are excluded from the bucket amounts (their invoices still count). Non-empty means the money figures are understated. */
+            fx_excluded_currencies?: string[];
+        };
+        /** @description One failure reason ranked by money at risk. */
+        CollectionsFailureBucket: {
+            error_code?: string;
+            count?: number;
+            /**
+             * Format: int64
+             * @description Minor units at risk, FX-normalized to the reporting currency.
+             */
+            amount_at_risk?: number;
+        };
+        /** @description One time bucket's retry success rate. */
+        DunningTimingRate: {
+            /** @description Hour (0-23) or day-of-week (0-6, Sunday=0), UTC. */
+            bucket?: number;
+            total?: number;
+            successes?: number;
+            success_rate?: number;
         };
         APIKey: {
             /** Format: uuid */
@@ -4906,6 +6036,63 @@ export interface components {
             address?: string;
             /** @description Letter of Undertaking on file (zero-rated exports). */
             has_lut?: boolean;
+        };
+        /** @description A legal entity under a tenant (Multi-Entity Books). Each entity has its own ledger and invoice series; every tenant has exactly one primary entity. */
+        Entity: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            tenant_id?: string;
+            /** @description Display name */
+            name?: string;
+            legal_name?: string;
+            /** @description The backfill entity every tenant has; cannot be deleted. */
+            is_primary?: boolean;
+            /** @description The entity's isolated ledger id (primary is 1). Assigned automatically. */
+            tb_ledger_id?: number;
+            /** @description Prefix for this entity's invoice series */
+            invoice_prefix?: string;
+            /** @description ISO 3166-1 alpha-2. */
+            country_code?: string;
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+        };
+        EntityInput: {
+            name: string;
+            legal_name?: string;
+            /** @description Optional; defaults to a slug of the name. */
+            invoice_prefix?: string;
+            country_code?: string;
+        };
+        /** @description A tenant's MCP server opt-in. */
+        MCPSettings: {
+            /** @description When true, AI agents may run money-path / destructive MCP tools (convert quote to invoice, cancel subscription, issue credit note, top up wallet, …) against this tenant. Off by default. */
+            tier3_enabled?: boolean;
+        };
+        /** @description A tenant's US tax identity (W-9) — the seller party shown on US sales-tax invoices. Presentation only. */
+        USTaxConfig: {
+            /** @description Seller legal name shown on US invoices. */
+            legal_name?: string;
+            /** @description Employer Identification Number (the W-9 tax id). */
+            ein?: string;
+            /** @description Seller postal address shown on US invoices. */
+            address?: string;
+        };
+        /** @description A tenant's EU e-invoicing configuration — the opt-in flag plus the EN 16931 seller party. */
+        EUEInvoiceConfig: {
+            /** @description When true, invoices generate an EN 16931 (UBL 2.1) e-invoice. Off by default. */
+            enabled?: boolean;
+            /** @description Seller registered/legal name (BT-27). Required to enable. */
+            legal_name?: string;
+            /** @description Seller VAT identifier incl. country prefix, e.g. "DE123456789" (BT-31). Required to enable. */
+            vat_number?: string;
+            /** @description Seller country as an ISO 3166-1 alpha-2 code (BT-40). Required to enable. */
+            country_code?: string;
+            street?: string;
+            city?: string;
+            postal_zone?: string;
         };
         IRPConfig: {
             id?: string;
@@ -5489,6 +6676,8 @@ export interface components {
         };
     };
     parameters: {
+        /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+        EntityIdQuery: string;
         PathID: string;
         /** @description Free-text search filter. */
         SearchQuery: string;
@@ -6094,6 +7283,17 @@ export interface operations {
                     /** @enum {string} */
                     tax_type?: "business" | "consumer";
                     place_of_supply?: string;
+                    /** @description US sales-tax exemption status (D2). */
+                    tax_exempt?: boolean;
+                    /** @description Exemption/resale certificate number. */
+                    tax_exemption_number?: string;
+                    /** @description Provider entity-use / usage code (also the reason). */
+                    tax_exemption_code?: string;
+                    /**
+                     * Format: date
+                     * @description Exemption certificate expiry (YYYY-MM-DD); empty/omitted = no expiry. Past this date the buyer is charged tax again (Inc 2).
+                     */
+                    tax_exemption_expires_at?: string;
                     line1?: string;
                     city?: string;
                     state?: string;
@@ -6118,6 +7318,64 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    getCreditStatement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The credit statement. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            customer_id?: string;
+                            balances?: {
+                                currency?: string;
+                                /** Format: uuid */
+                                entity_id?: string | null;
+                                /** Format: int64 */
+                                balance?: number;
+                            }[];
+                            grants?: components["schemas"]["CreditNote"][];
+                            applications?: {
+                                /** Format: uuid */
+                                credit_note_id?: string;
+                                /** Format: uuid */
+                                invoice_id?: string;
+                                invoice_number?: string;
+                                currency?: string;
+                                /** Format: int64 */
+                                amount?: number;
+                                /** Format: date-time */
+                                created_at?: string;
+                            }[];
+                            summary?: {
+                                currency?: string;
+                                /** Format: int64 */
+                                total_issued?: number;
+                                /** Format: int64 */
+                                total_applied?: number;
+                                /** Format: int64 */
+                                current_balance?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
         };
     };
     listCustomers: {
@@ -6507,6 +7765,37 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    billUsageNow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PathID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Nothing due (data is null). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Interim invoice created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invoice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     generateAdvanceInvoice: {
         parameters: {
             query?: never;
@@ -6671,6 +7960,32 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    sendInvoiceEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PathID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invoice email sent. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     getEInvoiceStatus: {
         parameters: {
             query?: never;
@@ -6758,6 +8073,62 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getEUEInvoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PathID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description EU e-invoice record, or null when not generated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description The EU e-invoice record (null if none generated). */
+                        data?: Record<string, never> | null;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    retryEUEInvoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PathID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Retry executed; the current EU e-invoice record (or null). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: Record<string, never> | null;
+                        message?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     updateCoupon: {
@@ -6851,6 +8222,31 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Coupon"];
                 };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listUsageEvents: {
+        parameters: {
+            query?: {
+                customer_id?: string;
+                dimension?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Raw usage events, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
@@ -7012,6 +8408,11 @@ export interface operations {
                      * @enum {string}
                      */
                     type?: "adjustment" | "refund";
+                    /**
+                     * Format: date-time
+                     * @description Optional expiry for a spendable adjustment credit. When it passes with balance remaining, the expiry sweep writes the balance off (DR Customer Credit / CR Credits & Adjustments). Ignored for refunds.
+                     */
+                    expires_at?: string | null;
                 };
             };
         };
@@ -7029,6 +8430,60 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    approveCreditNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Credit note approved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["CreditNote"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    rejectCreditNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Credit note rejected. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["CreditNote"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
         };
     };
     listQuotes: {
@@ -7525,7 +8980,10 @@ export interface operations {
     };
     getMRR: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -7544,6 +9002,64 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    getMRRByEntity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-entity MRR breakdown. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            reporting_currency?: string;
+                            /** Format: int64 */
+                            total_mrr?: number;
+                            entities?: components["schemas"]["MRREntityBreakdown"][];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getEntitiesOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-entity MRR + AR overview. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            reporting_currency?: string;
+                            /** Format: int64 */
+                            total_mrr?: number;
+                            /** Format: int64 */
+                            total_ar_outstanding?: number;
+                            entities?: components["schemas"]["EntityOverviewRow"][];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     getMRRWaterfall: {
         parameters: {
             query?: {
@@ -7551,6 +9067,8 @@ export interface operations {
                 start?: string;
                 /** @description Period end (YYYY-MM-DD). Defaults to today. */
                 end?: string;
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
             };
             header?: never;
             path?: never;
@@ -7575,7 +9093,10 @@ export interface operations {
     };
     getInvoiceAging: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -7968,6 +9489,80 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    handleRazorpayWebhookForConnection: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description HMAC-SHA256 signature of the raw request body. */
+                "X-Razorpay-Signature": string;
+            };
+            path: {
+                /** @description The tenant's Razorpay gateway-connection id. */
+                connID: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Event processed (or deliberately ignored). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status?: "ok" | "ignored";
+                        reason?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    handleStripeWebhookForConnection: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Stripe webhook signature header. */
+                "Stripe-Signature": string;
+            };
+            path: {
+                /** @description The tenant's Stripe gateway-connection id. */
+                connID: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Event processed (or deliberately ignored). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status?: "ok" | "ignored";
+                        reason?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     previewInvoiceHTML: {
         parameters: {
             query?: never;
@@ -8234,6 +9829,41 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             /** @description Self-serve card update isn't available on this deployment. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    portalStartBankAccountSetup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Bank-account SetupIntent created. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            client_secret?: string;
+                            publishable_key?: string;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            /** @description Bank (ACH) payments aren't available on this deployment. */
             503: {
                 headers: {
                     [name: string]: unknown;
@@ -8569,6 +10199,114 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    collectionsRetryNow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Requeued for retry. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    collectionsPauseDunning: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    paused?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Dunning pause state updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    collectionsMarkUncollectible: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invoice marked uncollectible. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getCollectionsQueue: {
+        parameters: {
+            query?: {
+                /** @description Narrow to a single recovery status. */
+                status?: "past_due" | "uncollectible";
+                /** @description Narrow to invoices owned by a specific recovery engine. */
+                managed_by?: "scheduler" | "worker" | "campaign";
+                page?: number;
+                per_page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The collections worklist. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["CollectionsQueueItem"][];
+                        meta?: {
+                            page?: number;
+                            per_page?: number;
+                            total?: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     askAnalytics: {
         parameters: {
             query?: never;
@@ -8798,7 +10536,12 @@ export interface operations {
     };
     getTrialBalance: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
+                /** @description Roll all entities' accounts up by code into one consolidated trial balance. */
+                consolidated?: boolean;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8821,7 +10564,10 @@ export interface operations {
     };
     exportGeneralLedger: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8890,6 +10636,33 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    getClosePack: {
+        parameters: {
+            query: {
+                month: number;
+                year: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Month-end close pack for the period. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: Record<string, never>;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     getRevRecReport: {
         parameters: {
             query: {
@@ -8948,6 +10721,8 @@ export interface operations {
                 month: number;
                 /** @description Year of the tax period. */
                 year: number;
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
             };
             header?: never;
             path?: never;
@@ -8980,6 +10755,8 @@ export interface operations {
                 month: number;
                 /** @description Year of the tax period. */
                 year: number;
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
             };
             header?: never;
             path?: never;
@@ -9007,7 +10784,10 @@ export interface operations {
     };
     getGSTConfig: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -9030,7 +10810,10 @@ export interface operations {
     };
     updateGSTConfig: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -9094,9 +10877,83 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
-    getTaxNexus: {
+    getTaxRegistrations: {
         parameters: {
             query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Registrations. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            state_code?: string;
+                            registration_number?: string;
+                            /** @enum {string} */
+                            status?: "registered" | "pending" | "not_registered";
+                            /** Format: date */
+                            registered_at?: string | null;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    setTaxRegistrations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    registrations?: {
+                        /** @example CA */
+                        state_code: string;
+                        registration_number?: string;
+                        /**
+                         * @default registered
+                         * @enum {string}
+                         */
+                        status?: "registered" | "pending" | "not_registered";
+                        /** Format: date */
+                        registered_at?: string;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description Updated registrations. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: Record<string, never>[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getTaxNexus: {
+        parameters: {
+            query?: {
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -9119,7 +10976,10 @@ export interface operations {
     };
     setTaxNexus: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -9153,6 +11013,62 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    getTaxLiabilityReport: {
+        parameters: {
+            query?: {
+                year?: number;
+                /** @description Inclusive start date (YYYY-MM-DD, UTC). Requires 'to'. */
+                from?: string;
+                /** @description Exclusive end date (YYYY-MM-DD, UTC). Requires 'from'. */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-state US sales-tax liability. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: date */
+                            from_date?: string;
+                            /** Format: date */
+                            to_date?: string;
+                            currency?: string;
+                            /** Format: int64 */
+                            total_gross_sales?: number;
+                            /** Format: int64 */
+                            total_tax_collected?: number;
+                            states?: {
+                                state_code?: string;
+                                /** Format: int64 */
+                                gross_sales?: number;
+                                /** Format: int64 */
+                                taxable_sales?: number;
+                                /** Format: int64 */
+                                exempt_sales?: number;
+                                /** Format: int64 */
+                                non_taxable_sales?: number;
+                                /** Format: int64 */
+                                tax_collected?: number;
+                                invoice_count?: number;
+                                has_nexus?: boolean;
+                                /** @enum {string} */
+                                nexus_type?: "physical" | "voluntary" | "economic";
+                            }[];
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
         };
     };
     getTaxNexusStatus: {
@@ -9211,7 +11127,10 @@ export interface operations {
     };
     getIRPConfig: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -9234,7 +11153,10 @@ export interface operations {
     };
     updateIRPConfig: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -9279,6 +11201,298 @@ export interface operations {
                     "application/json": {
                         success?: boolean;
                         message?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getEUEInvoiceConfig: {
+        parameters: {
+            query?: {
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description EU e-invoicing configuration. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["EUEInvoiceConfig"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateEUEInvoiceConfig: {
+        parameters: {
+            query?: {
+                /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
+                entity_id?: components["parameters"]["EntityIdQuery"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EUEInvoiceConfig"];
+            };
+        };
+        responses: {
+            /** @description Configuration saved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["EUEInvoiceConfig"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getUSTaxConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description US tax configuration. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["USTaxConfig"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateUSTaxConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["USTaxConfig"];
+            };
+        };
+        responses: {
+            /** @description Configuration saved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["USTaxConfig"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listEntities: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tenant's entities. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Entity"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createEntity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityInput"];
+            };
+        };
+        responses: {
+            /** @description Entity created. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Entity"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getEntity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PathID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The entity. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Entity"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateEntity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PathID"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityInput"];
+            };
+        };
+        responses: {
+            /** @description Entity updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Entity"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    deleteEntity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PathID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Entity deleted. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        status?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getMCPSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description MCP settings. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["MCPSettings"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateMCPSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MCPSettings"];
+            };
+        };
+        responses: {
+            /** @description Settings saved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["MCPSettings"];
                     };
                 };
             };
@@ -11060,6 +13274,81 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    getDunningTiming: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Timing insights. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            by_hour?: components["schemas"]["DunningTimingRate"][];
+                            by_day_of_week?: components["schemas"]["DunningTimingRate"][];
+                            best_hour?: number | null;
+                            best_day?: number | null;
+                            sample_size?: number;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getCollectionsFunnel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recovery funnel. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["CollectionsFunnel"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getCollectionsFailures: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Failure reasons ranked by money at risk. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["CollectionsFailureBucket"][];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     getPlanEntitlements: {
         parameters: {
             query?: never;
@@ -11318,6 +13607,52 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    simulateCharges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description ISO code; defaults to the plan's first price currency. */
+                    currency?: string;
+                    /**
+                     * Format: uuid
+                     * @description Optional: fills usage for metrics without an explicit entry.
+                     */
+                    subscription_id?: string;
+                    charges?: components["schemas"]["ChargeInput"][];
+                    usage?: {
+                        /** Format: uuid */
+                        metric_id?: string;
+                        /** Format: int64 */
+                        quantity?: number;
+                    }[];
+                };
+            };
+        };
+        responses: {
+            /** @description The pre-tax pricing simulation with a balanced GL preview. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: Record<string, never>;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     getSubscriptionUsageAmount: {
         parameters: {
             query?: never;
@@ -11443,6 +13778,49 @@ export interface operations {
             };
         };
     };
+    updateUsageAlert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    threshold_type: "quantity" | "percent_of_limit";
+                    /** Format: int64 */
+                    threshold: number;
+                };
+            };
+        };
+        responses: {
+            /** @description The updated alert */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["UsageAlert"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description An identical alert already exists for the subscription + metric. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     deleteUsageAlert: {
         parameters: {
             query?: never;
@@ -11536,6 +13914,11 @@ export interface operations {
                     /** Format: uuid */
                     customer_id: string;
                     currency: string;
+                    /**
+                     * Format: uuid
+                     * @description Legal entity the wallet belongs to (Multi-Entity Books). Omit for the tenant's primary entity.
+                     */
+                    entity_id?: string;
                     /**
                      * Format: int64
                      * @description Recharge when balance falls below this (minor units).
@@ -11637,6 +14020,45 @@ export interface operations {
                 content: {
                     "application/json": {
                         data?: components["schemas"]["WalletTransaction"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    closeWallet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settled amounts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /**
+                             * Format: int64
+                             * @description Paid balance to return (minor units)
+                             */
+                            refunded?: number;
+                            /**
+                             * Format: int64
+                             * @description Promotional balance written off (minor units)
+                             */
+                            forfeited?: number;
+                        };
+                        message?: string;
                     };
                 };
             };
