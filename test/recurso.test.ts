@@ -101,6 +101,12 @@ const cases: Record<string, MethodCase[]> = {
         },
         { method: 'churn', call: (r) => r.customers.churn('cus_1'), verb: 'get', path: '/v1/customers/cus_1/churn' },
         { method: 'consents', call: (r) => r.customers.consents('cus_1'), verb: 'get', path: '/v1/customers/cus_1/consents' },
+        {
+            method: 'creditStatement',
+            call: (r) => r.customers.creditStatement('cus_1'),
+            verb: 'get',
+            path: '/v1/customers/cus_1/credit-statement',
+        },
     ],
 
     plans: [
@@ -246,6 +252,7 @@ const cases: Record<string, MethodCase[]> = {
             path: '/v1/wallets/wal_1/auto-recharge',
             body: { auto_recharge_threshold: 100000, auto_recharge_amount: 500000 },
         },
+        { method: 'close', call: (r) => r.wallets.close('wal_1'), verb: 'post', path: '/v1/wallets/wal_1/close' },
     ],
 
     usageAlerts: [
@@ -263,6 +270,13 @@ const cases: Record<string, MethodCase[]> = {
             verb: 'get',
             path: '/v1/usage-alerts',
             params: { subscription_id: 'sub_1' },
+        },
+        {
+            method: 'update',
+            call: (r) => r.usageAlerts.update('ua_1', { threshold_type: 'quantity', threshold: 5000 }),
+            verb: 'put',
+            path: '/v1/usage-alerts/ua_1',
+            body: { threshold_type: 'quantity', threshold: 5000 },
         },
         { method: 'delete', call: (r) => r.usageAlerts.delete('ua_1'), verb: 'delete', path: '/v1/usage-alerts/ua_1' },
     ],
@@ -539,6 +553,22 @@ const cases: Record<string, MethodCase[]> = {
 
     analytics: [
         { method: 'mrr', call: (r) => r.analytics.mrr(), verb: 'get', path: '/v1/analytics/mrr' },
+        {
+            method: 'mrr (entity scoped)',
+            call: (r) => r.analytics.mrr({ entity_id: 'ent_1' }),
+            verb: 'get',
+            path: '/v1/analytics/mrr',
+            params: { entity_id: 'ent_1' },
+        },
+        { method: 'mrrByEntity', call: (r) => r.analytics.mrrByEntity(), verb: 'get', path: '/v1/analytics/mrr/by-entity' },
+        {
+            method: 'invoiceAging',
+            call: (r) => r.analytics.invoiceAging({ entity_id: 'ent_1' }),
+            verb: 'get',
+            path: '/v1/analytics/invoice-aging',
+            params: { entity_id: 'ent_1' },
+        },
+        { method: 'dunningTiming', call: (r) => r.analytics.dunningTiming(), verb: 'get', path: '/v1/analytics/dunning/timing' },
     ],
 
     ledger: [
@@ -763,6 +793,56 @@ const cases: Record<string, MethodCase[]> = {
             verb: 'delete',
             path: '/v1/dunning-campaigns/steps/dcs_1',
         },
+    ],
+    collections: [
+        {
+            method: 'queue',
+            call: (r) => r.collections.queue({ status: 'past_due', managed_by: 'worker', per_page: 25 }),
+            verb: 'get',
+            path: '/v1/collections/queue',
+            params: { status: 'past_due', managed_by: 'worker', per_page: 25 },
+        },
+        { method: 'funnel', call: (r) => r.collections.funnel(), verb: 'get', path: '/v1/analytics/collections/funnel' },
+        { method: 'failures', call: (r) => r.collections.failures(), verb: 'get', path: '/v1/analytics/collections/failures' },
+        {
+            method: 'retryNow',
+            call: (r) => r.collections.retryNow('inv_1'),
+            verb: 'post',
+            path: '/v1/collections/invoices/inv_1/retry-now',
+        },
+        {
+            method: 'pauseDunning',
+            call: (r) => r.collections.pauseDunning('inv_1', true),
+            verb: 'post',
+            path: '/v1/collections/invoices/inv_1/pause',
+            body: { paused: true },
+        },
+        {
+            method: 'markUncollectible',
+            call: (r) => r.collections.markUncollectible('inv_1'),
+            verb: 'post',
+            path: '/v1/collections/invoices/inv_1/mark-uncollectible',
+        },
+    ],
+    entities: [
+        { method: 'list', call: (r) => r.entities.list(), verb: 'get', path: '/v1/entities' },
+        {
+            method: 'create',
+            call: (r) => r.entities.create({ name: 'Branch', invoice_prefix: 'BR' }),
+            verb: 'post',
+            path: '/v1/entities',
+            body: { name: 'Branch', invoice_prefix: 'BR' },
+        },
+        { method: 'get', call: (r) => r.entities.get('ent_1'), verb: 'get', path: '/v1/entities/ent_1' },
+        {
+            method: 'update',
+            call: (r) => r.entities.update('ent_1', { name: 'Branch 2' }),
+            verb: 'put',
+            path: '/v1/entities/ent_1',
+            body: { name: 'Branch 2' },
+        },
+        { method: 'delete', call: (r) => r.entities.delete('ent_1'), verb: 'delete', path: '/v1/entities/ent_1' },
+        { method: 'overview', call: (r) => r.entities.overview(), verb: 'get', path: '/v1/analytics/entities-overview' },
     ],
 };
 

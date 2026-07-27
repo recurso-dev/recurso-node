@@ -359,6 +359,12 @@ export class Recurso {
         churn: (id: string) => this.get<Res<'getCustomerChurn'>>(`/v1/customers/${id}/churn`),
         consents: (id: string) =>
             this.get<Res<'listCustomerConsents'>>(`/v1/customers/${id}/consents`),
+        /**
+         * The customer's account-credit statement: spendable balances,
+         * grants, invoice draw-downs, and a per-currency rollup.
+         */
+        creditStatement: (id: string) =>
+            this.get<Res<'getCreditStatement'>>(`/v1/customers/${id}/credit-statement`),
     };
 
     public plans = {
@@ -516,6 +522,12 @@ export class Recurso {
         /** Set (both fields) or clear (both null) the auto-recharge rule. */
         setAutoRecharge: (id: string, data: Body<'updateWalletAutoRecharge'>) =>
             this.put<Res<'updateWalletAutoRecharge'>>(`/v1/wallets/${id}/auto-recharge`, data),
+        /**
+         * Close the wallet and settle its balance: paid residue is refunded
+         * (out of band), promotional residue is forfeited. No further top-ups
+         * or drains are accepted.
+         */
+        close: (id: string) => this.post<Res<'closeWallet'>>(`/v1/wallets/${id}/close`),
     };
 
     public usageAlerts = {
@@ -527,7 +539,53 @@ export class Recurso {
             this.post<Res<'createUsageAlert'>>('/v1/usage-alerts', data),
         list: (params?: { subscription_id?: string }) =>
             this.get<Res<'listUsageAlerts'>>('/v1/usage-alerts', params),
+        /**
+         * Re-aim the threshold (subscription + metric are the alert's
+         * identity). Editing resets the once-per-period fired lock, so the
+         * new threshold can fire in the current billing period.
+         */
+        update: (id: string, data: Body<'updateUsageAlert'>) =>
+            this.put<Res<'updateUsageAlert'>>(`/v1/usage-alerts/${id}`, data),
         delete: (id: string) => this.del<Res<'deleteUsageAlert'>>(`/v1/usage-alerts/${id}`),
+    };
+
+    /**
+     * The operator layer over payment recovery: the worklist of failing
+     * invoices, the recovery funnel, and guarded manual controls (409 when an
+     * action could double-charge — paused, mandate, or still-settling ACH).
+     */
+    public collections = {
+        queue: (params?: {
+            status?: 'past_due' | 'uncollectible';
+            managed_by?: 'scheduler' | 'worker' | 'campaign';
+            page?: number;
+            per_page?: number;
+        }) => this.get<Res<'getCollectionsQueue'>>('/v1/collections/queue', params),
+        funnel: () => this.get<Res<'getCollectionsFunnel'>>('/v1/analytics/collections/funnel'),
+        failures: () => this.get<Res<'getCollectionsFailures'>>('/v1/analytics/collections/failures'),
+        retryNow: (invoiceId: string) =>
+            this.post<Res<'collectionsRetryNow'>>(`/v1/collections/invoices/${invoiceId}/retry-now`),
+        pauseDunning: (invoiceId: string, paused: boolean) =>
+            this.post<Res<'collectionsPauseDunning'>>(`/v1/collections/invoices/${invoiceId}/pause`, { paused }),
+        markUncollectible: (invoiceId: string) =>
+            this.post<Res<'collectionsMarkUncollectible'>>(
+                `/v1/collections/invoices/${invoiceId}/mark-uncollectible`,
+            ),
+    };
+
+    /**
+     * Legal entities (Multi-Entity Books): each has its own ledger, gapless
+     * invoice series, and tax identity; every workspace has one primary.
+     */
+    public entities = {
+        list: () => this.get<Res<'listEntities'>>('/v1/entities'),
+        create: (data: Body<'createEntity'>) => this.post<Res<'createEntity'>>('/v1/entities', data),
+        get: (id: string) => this.get<Res<'getEntity'>>(`/v1/entities/${id}`),
+        update: (id: string, data: Body<'updateEntity'>) =>
+            this.put<Res<'updateEntity'>>(`/v1/entities/${id}`, data),
+        delete: (id: string) => this.del<Res<'deleteEntity'>>(`/v1/entities/${id}`),
+        /** Per-entity MRR + open AR side by side, with consolidated totals. */
+        overview: () => this.get<Res<'getEntitiesOverview'>>('/v1/analytics/entities-overview'),
     };
 
     public auditLogs = {
@@ -682,7 +740,15 @@ export class Recurso {
          * currency: {mrr, normalized_mrr, reporting_currency, breakdown[],
          * fx: {rates, source, as_of}}.
          */
-        mrr: () => this.get<Res<'getMRR'>>('/v1/analytics/mrr'),
+        mrr: (params?: { entity_id?: string }) =>
+            this.get<Res<'getMRR'>>('/v1/analytics/mrr', params),
+        /** MRR broken down by legal entity, sorted by MRR descending. */
+        mrrByEntity: () => this.get<Res<'getMRRByEntity'>>('/v1/analytics/mrr/by-entity'),
+        /** Outstanding AR bucketed by age; entity_id scopes to one entity. */
+        invoiceAging: (params?: { entity_id?: string }) =>
+            this.get<Res<'getInvoiceAging'>>('/v1/analytics/invoice-aging', params),
+        /** Best-time-to-retry insights from historical dunning outcomes. */
+        dunningTiming: () => this.get<Res<'getDunningTiming'>>('/v1/analytics/dunning/timing'),
     };
 
     public ledger = {
