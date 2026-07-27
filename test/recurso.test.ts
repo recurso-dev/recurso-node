@@ -483,6 +483,11 @@ const cases: Record<string, MethodCase[]> = {
         { method: 'redeliver', call: (r) => r.events.redeliver('evt_1'), verb: 'post', path: '/v1/events/evt_1/redeliver' },
     ],
 
+    disputes: [
+        { method: 'list', call: (r) => r.disputes.list(listParams), verb: 'get', path: '/v1/disputes', params: listParams },
+        { method: 'resolve', call: (r) => r.disputes.resolve('dsp_1', body), verb: 'post', path: '/v1/disputes/dsp_1/resolve', body },
+    ],
+
     mandates: [
         { method: 'create', call: (r) => r.mandates.create(body), verb: 'post', path: '/v1/mandates', body },
         { method: 'list', call: (r) => r.mandates.list(listParams), verb: 'get', path: '/v1/mandates', params: listParams },
@@ -492,6 +497,7 @@ const cases: Record<string, MethodCase[]> = {
 
     gifts: [
         { method: 'purchase', call: (r) => r.gifts.purchase(body), verb: 'post', path: '/v1/gifts/purchase', body },
+        { method: 'cancel', call: (r) => r.gifts.cancel('gft_1'), verb: 'post', path: '/v1/gifts/gft_1/cancel' },
         {
             method: 'redeem',
             call: (r) => r.gifts.redeem({ code: 'GIFT-1234' }),

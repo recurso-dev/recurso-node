@@ -2814,6 +2814,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/gifts/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel an unredeemed gift (buyer gets account credit)
+         * @description Cancels a purchased-but-unredeemed gift. If the buyer's purchase invoice was PAID, a spendable adjustment credit note for the amount is issued to the buyer (through the normal credit-note path, so approval governance and ledger postings apply). If the invoice is still open, it is voided instead — no money arrived, nothing is credited. A redeemed gift cannot be canceled (409); a second cancel is refused (409) so the credit can never issue twice.
+         */
+        post: operations["cancelGift"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/mandates": {
         parameters: {
             query?: never;
@@ -6812,6 +6832,8 @@ export interface operations {
                     email: string;
                     /** Format: password */
                     password: string;
+                    /** @description Optional ISO-2 business country (e.g. "US"). Stamped on the tenant's primary legal entity, which is the seller tax jurisdiction — a US signup invoices under US sales tax from day one. Omit to configure later in settings. */
+                    country?: string;
                 };
             };
         };
@@ -8167,7 +8189,12 @@ export interface operations {
     };
     listCoupons: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Max rows returned (clamped to 1000). */
+                limit?: number;
+                /** @description Rows to skip */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8358,6 +8385,10 @@ export interface operations {
     listCreditNotes: {
         parameters: {
             query?: {
+                /** @description Max rows returned (clamped to 1000). */
+                limit?: number;
+                /** @description Rows to skip */
+                offset?: number;
                 /** @description Filter by customer. */
                 customer_id?: string;
             };
@@ -8489,6 +8520,10 @@ export interface operations {
     listQuotes: {
         parameters: {
             query?: {
+                /** @description Max rows returned (clamped to 1000). */
+                limit?: number;
+                /** @description Rows to skip */
+                offset?: number;
                 status?: components["schemas"]["QuoteStatus"];
                 customer_id?: string;
                 /** @description Free-text search. */
@@ -10047,6 +10082,10 @@ export interface operations {
     listDisputes: {
         parameters: {
             query?: {
+                /** @description Max rows returned (clamped to 1000). */
+                limit?: number;
+                /** @description Rows to skip */
+                offset?: number;
                 /** @description Filter by dispute status. */
                 status?: "open" | "resolved";
             };
@@ -10487,7 +10526,12 @@ export interface operations {
     };
     listLedgerAccounts: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Max rows returned (clamped to 1000). */
+                limit?: number;
+                /** @description Rows to skip */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -11872,9 +11916,45 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
-    listMandates: {
+    cancelGift: {
         parameters: {
             query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The canceled gift and what happened to the buyer's money. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            gift?: components["schemas"]["Gift"];
+                            credit_note?: components["schemas"]["CreditNote"];
+                            invoice_voided?: boolean;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listMandates: {
+        parameters: {
+            query?: {
+                /** @description Max rows returned (clamped to 1000). */
+                limit?: number;
+                /** @description Rows to skip */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -11998,7 +12078,12 @@ export interface operations {
     };
     listVirtualAccounts: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Max rows returned (clamped to 1000). */
+                limit?: number;
+                /** @description Rows to skip */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -12057,7 +12142,12 @@ export interface operations {
     };
     listOfflinePayments: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Max rows returned (clamped to 1000). */
+                limit?: number;
+                /** @description Rows to skip */
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
