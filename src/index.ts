@@ -14,6 +14,7 @@ export interface RecursoOptions {
 export interface ListParams {
     page?: number;
     limit?: number;
+    offset?: number;
     q?: string;
     status?: string;
     [key: string]: unknown;
@@ -685,6 +686,14 @@ export class Recurso {
         redeliver: (id: string) => this.post<Res<'redeliverEvent'>>(`/v1/events/${id}/redeliver`),
     };
 
+    public disputes = {
+        /** List invoice disputes (tenant-scoped). */
+        list: (params?: ListParams) => this.get<Res<'listDisputes'>>('/v1/disputes', params),
+        /** Mark an open dispute resolved, with an optional note. */
+        resolve: (id: string, data?: Body<'resolveDispute'>) =>
+            this.post<Res<'resolveDispute'>>(`/v1/disputes/${id}/resolve`, data),
+    };
+
     public mandates = {
         create: (data: Body<'createMandate'>) =>
             this.post<Res<'createMandate'>>('/v1/mandates', data),
@@ -698,6 +707,11 @@ export class Recurso {
             this.post<Res<'purchaseGift'>>('/v1/gifts/purchase', data),
         redeem: (data: GiftRedeemInput) => this.post<Res<'redeemGift'>>('/v1/gifts/redeem', data),
         list: (params?: ListParams) => this.get<Res<'listGifts'>>('/v1/gifts', params),
+        /**
+         * Cancel an unredeemed gift. A paid purchase credits the buyer's
+         * account; an unpaid purchase invoice is voided. Redeemed gifts 409.
+         */
+        cancel: (id: string) => this.post<Res<'cancelGift'>>(`/v1/gifts/${id}/cancel`),
     };
 
     public referrals = {
@@ -752,7 +766,8 @@ export class Recurso {
     };
 
     public ledger = {
-        accounts: () => this.get<Res<'listLedgerAccounts'>>('/v1/ledger/accounts'),
+        accounts: (params?: ListParams) =>
+            this.get<Res<'listLedgerAccounts'>>('/v1/ledger/accounts', params),
         entries: (params?: LedgerEntriesParams) =>
             this.get<Res<'listLedgerEntries'>>('/v1/ledger/entries', params),
     };
@@ -813,7 +828,8 @@ export class Recurso {
          */
         create: (data: Body<'createVirtualAccount'>) =>
             this.post<Res<'createVirtualAccount'>>('/v1/virtual-accounts', data),
-        list: () => this.get<Res<'listVirtualAccounts'>>('/v1/virtual-accounts'),
+        list: (params?: ListParams) =>
+            this.get<Res<'listVirtualAccounts'>>('/v1/virtual-accounts', params),
     };
 
     public offlinePayments = {
@@ -823,7 +839,8 @@ export class Recurso {
          */
         record: (data: Body<'recordOfflinePayment'>) =>
             this.post<Res<'recordOfflinePayment'>>('/v1/payments/offline', data),
-        list: () => this.get<Res<'listOfflinePayments'>>('/v1/payments/offline'),
+        list: (params?: ListParams) =>
+            this.get<Res<'listOfflinePayments'>>('/v1/payments/offline', params),
     };
 
     public churn = {
