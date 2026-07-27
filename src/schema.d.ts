@@ -1469,6 +1469,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/webhooks/gocardless": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * GoCardless webhook receiver (platform account)
+         * @description Receives GoCardless webhook deliveries for the platform's own
+         *     GoCardless account. Each delivery batches multiple events; billing
+         *     request fulfilment activates the corresponding mandate and mandate
+         *     lifecycle events keep local status in sync. The raw body is verified
+         *     against the `Webhook-Signature` HMAC before any event is trusted.
+         *     Called by GoCardless, not by API consumers.
+         */
+        post: operations["handleGoCardlessWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhooks/gocardless/{connID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * GoCardless webhook receiver (per-connection, BYO)
+         * @description Per-connection variant of the GoCardless webhook receiver for tenants
+         *     who connected their own GoCardless account. The batch is verified with
+         *     THAT connection's own signing secret (resolved from `connID`) before
+         *     any event is trusted. Called by GoCardless, not by API consumers.
+         */
+        post: operations["handleGoCardlessWebhookForConnection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/webhooks/razorpay/{connID}": {
         parameters: {
             query?: never;
@@ -2514,6 +2562,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/crm/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync this workspace's customers to its connected CRM now
+         * @description Runs the CRM sweep for the calling workspace synchronously — the way to test a freshly connected HubSpot token instead of waiting for the daily sweep. Returns how many contacts were upserted. 400 when no CRM is connected; 502 carries the provider's own rejection (bad token, missing scopes).
+         */
+        post: operations["syncCRMNow"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/settings/tax/us": {
         parameters: {
             query?: never;
@@ -3123,7 +3191,15 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Trigger a sync to connected accounting systems */
+        /**
+         * Trigger a sync to connected accounting systems
+         * @description Starts a forced full re-push to every active accounting connection in
+         *     the background and returns immediately — the sweep can take minutes
+         *     for large tenants. Progress is observable via the sync-activity log
+         *     and each connection's sync_status. One manual sync runs per tenant at
+         *     a time; a request while one is running returns 200 with
+         *     status=sync_already_running.
+         */
         post: operations["triggerAccountingSync"];
         delete?: never;
         options?: never;
@@ -4846,7 +4922,7 @@ export interface components {
             /** Format: uuid */
             id?: string;
             /** @enum {string} */
-            provider?: "stripe" | "razorpay";
+            provider?: "stripe" | "razorpay" | "gocardless";
             /** @enum {string} */
             mode?: "test" | "live";
             public_key?: string;
@@ -9524,6 +9600,76 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    handleGoCardlessWebhook: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description HMAC-SHA256 hex signature of the raw request body. */
+                "Webhook-Signature": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Batch processed (individual events may be ignored). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status?: "ok" | "ignored";
+                        processed?: number;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    handleGoCardlessWebhookForConnection: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description HMAC-SHA256 hex signature of the raw request body. */
+                "Webhook-Signature": string;
+            };
+            path: {
+                /** @description The tenant's GoCardless gateway-connection id. */
+                connID: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Batch processed (individual events may be ignored). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status?: "ok" | "ignored";
+                        processed?: number;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     handleRazorpayWebhookForConnection: {
         parameters: {
             query?: never;
@@ -11309,6 +11455,41 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    syncCRMNow: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Sweep completed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            contacts_synced?: number;
+                            /** @description Eligible contacts not pushed this call (manual sync is capped; the daily sweep finishes them). */
+                            contacts_remaining?: number;
+                        };
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description The CRM provider rejected the sync (e.g. invalid token); the message carries the provider's error. */
+            424: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getUSTaxConfig: {
         parameters: {
             query?: never;
@@ -11985,12 +12166,14 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": {
+                    /** @description Mandate rail. Empty/INR = Razorpay UPI AutoPay; an overridden currency (e.g. EUR) = bank debit via GoCardless. VPA is only required for INR. */
+                    currency?: string;
                     /** Format: uuid */
                     customer_id: string;
                     /** Format: uuid */
                     subscription_id?: string;
                     /** @description Customer UPI VPA (e.g. `name@bank`). */
-                    vpa: string;
+                    vpa?: string;
                     /**
                      * Format: int64
                      * @description Maximum per-debit amount in the lowest currency unit.
@@ -12627,8 +12810,20 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Sync started. */
+            /** @description A manual sync is already running for this tenant. */
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "sync_already_running";
+                    };
+                };
+            };
+            /** @description Sync started in the background. */
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
