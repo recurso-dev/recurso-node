@@ -389,7 +389,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Get a subscription by id */
+        get: operations["getSubscription"];
         /** Change a subscription's plan (upgrade/downgrade) */
         put: operations["updateSubscription"];
         post?: never;
@@ -7631,6 +7632,31 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    getSubscription: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PathID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Subscription"];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
     updateSubscription: {
         parameters: {
             query?: never;
@@ -12803,7 +12829,10 @@ export interface operations {
     };
     triggerAccountingSync: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Scope the sweep to one connection. Scoped syncs run INCREMENTALLY (unchanged records are skipped); omitting provider sweeps all active connections with a forced full re-push. */
+                provider?: "quickbooks" | "xero" | "netsuite" | "tally";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -12839,7 +12868,15 @@ export interface operations {
     };
     getAccountingSyncStatus: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Only rows for this integration. */
+                provider?: string;
+                status?: "success" | "error";
+                /** @description Substring match on the provider-side or internal record id. */
+                search?: string;
+                limit?: number;
+                offset?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;

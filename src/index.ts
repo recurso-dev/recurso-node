@@ -403,6 +403,7 @@ export class Recurso {
             this.post<Res<'createSubscription'>>('/v1/subscriptions', data),
         list: (params?: ListParams) =>
             this.get<Res<'listSubscriptions'>>('/v1/subscriptions', params),
+        get: (id: string) => this.get<Res<'getSubscription'>>(`/v1/subscriptions/${id}`),
         update: (id: string, data: Body<'updateSubscription'>) =>
             this.put<Res<'updateSubscription'>>(`/v1/subscriptions/${id}`, data),
         /**
