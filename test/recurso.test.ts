@@ -156,6 +156,7 @@ const cases: Record<string, MethodCase[]> = {
             body: { customer_id: 'cus_1', plan_id: 'plan_1', coupon_code: 'SAVE10' },
         },
         { method: 'list', call: (r) => r.subscriptions.list(listParams), verb: 'get', path: '/v1/subscriptions', params: listParams },
+        { method: 'get', call: (r) => r.subscriptions.get('sub_1'), verb: 'get', path: '/v1/subscriptions/sub_1' },
         { method: 'update', call: (r) => r.subscriptions.update('sub_1', body), verb: 'put', path: '/v1/subscriptions/sub_1', body },
         {
             method: 'previewChange',
