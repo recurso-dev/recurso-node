@@ -24,6 +24,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Prometheus metrics
+         * @description Prometheus text-format metrics: HTTP request counts + latency histograms (by method/route/status) and Go runtime gauges. Optionally bearer-gated via the METRICS_TOKEN env; open when unset (scrape from a trusted network).
+         */
+        get: operations["getMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/platform/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Founder-only cross-tenant funnel metrics
+         * @description Operator-only snapshot across ALL tenants — signups (7d/30d), activation (tenants with >=1 customer), trials expiring soon, plan/billing breakdowns, and recent signups. Gated by the FOUNDER_TOKEN bearer; returns 404 when FOUNDER_TOKEN is unset (feature off). Never reachable via tenant auth.
+         */
+        get: operations["getPlatformMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/version": {
         parameters: {
             query?: never;
@@ -320,6 +360,126 @@ export interface paths {
         get: operations["getCreditStatement"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/import/stripe/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dry-run preview of a Stripe export
+         * @description Parses an uploaded Stripe export (customers, products, prices, subscriptions, payment methods) and returns a plan describing exactly what a commit would create, link to an existing record, skip, or refuse — with NO side effects. Existing customers are matched by email and linked rather than duplicated.
+         */
+        post: operations["previewStripeImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/import/revenuecat/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dry-run preview of a RevenueCat export
+         * @description Parses an uploaded RevenueCat export (subscribers + their subscriptions, and products) and returns a plan of what a commit would do — no side effects. Note: RevenueCat identifies subscribers by app_user_id; those without an email surface as conflicts (Recurso requires one).
+         */
+        post: operations["previewRevenueCatImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/import/revenuecat/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a RevenueCat export (customers, plans, active subscriptions)
+         * @description Imports the uploaded RevenueCat export idempotently — creating customers (subscribers with an email), plans (products), and active subscriptions via a direct insert (no billing side effect). Re-running is safe; per-object failures are returned rather than aborting.
+         */
+        post: operations["commitRevenueCatImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/import/chargebee/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dry-run preview of a Chargebee export
+         * @description Parses an uploaded Chargebee export (customers, plans, subscriptions) and returns a plan of what a commit would create, link, skip, or refuse — with NO side effects. Existing customers are matched by email.
+         */
+        post: operations["previewChargebeeImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/import/chargebee/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a Chargebee export (customers, plans, subscriptions)
+         * @description Imports the uploaded Chargebee export idempotently — creating customers, plans, and subscriptions and recording an idempotency mapping for each. Subscriptions are imported in their current billing state via a direct insert (no invoice/charge/ledger side effect). Re-running is safe; per-object failures are returned rather than aborting the import.
+         */
+        post: operations["commitChargebeeImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/import/stripe/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a Stripe export (customers, plans, subscriptions)
+         * @description Imports the uploaded Stripe export, creating customers, plans, and subscriptions and recording an idempotency mapping for each. Re-running is safe: already-imported ids and records that already exist (by email or plan code) are skipped. Subscriptions are imported in their current billing state via a direct insert — no invoice, charge, or ledger entry is generated, so Recurso takes over at the next renewal instead of re-billing the current cycle. Per-object failures are returned in the response rather than aborting the whole import. Card payment methods are NOT imported — card data can't be migrated from a static export.
+         */
+        post: operations["commitStripeImport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -844,6 +1004,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/credit-notes/{id}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a printable credit note
+         * @description Returns a print-ready HTML rendering of the credit note, tenant-scoped. Requires authentication (API key or dashboard session): the document carries the customer's legal name and address, so it is never publicly fetchable by UUID.
+         */
+        get: operations["downloadCreditNotePDF"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/credit-notes/{id}/approve": {
         parameters: {
             query?: never;
@@ -872,6 +1052,26 @@ export interface paths {
         put?: never;
         /** Reject a pending credit note */
         post: operations["rejectCreditNote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/credit-notes/{id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Void an issued account-credit note
+         * @description Cancels an issued adjustment (account-credit) note and writes off its unspent balance, posting the GL reversal. Only the unspent portion is reversed; any already-applied credit stays real. Refund notes cannot be voided (the money left through the payment gateway). Admins/owners only.
+         */
+        post: operations["voidCreditNote"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2101,6 +2301,46 @@ export interface paths {
          * @description Generates a new secret key. The raw `key_value` is returned only in this response. Choose the mode with `mode`: a `test` key (rsk_test_, the default) works on a non-live server; a `live` key (rsk_live_) works only on a server configured with live payment gateways.
          */
         post: operations["createAPIKey"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the tenant's managed-cloud billing/trial status
+         * @description Returns the tenant's billing lifecycle: status (trialing/active/ past_due/canceled), plan tier, trial end, days left, and whether the trial has expired. Read-only in this increment.
+         */
+        get: operations["getBillingStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billing/plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Managed-cloud plan catalog
+         * @description The available managed-cloud plans (mirrors recurso.dev/pricing).
+         */
+        get: operations["getBillingPlans"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4108,6 +4348,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Confirm an account's email with a token
+         * @description Consumes a single-use verification token from the emailed link and marks the account's email address confirmed. Invalid/expired/used tokens return a generic 400 so the endpoint is not a token oracle.
+         */
+        post: operations["verifyEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/verify-email/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resend the verification link
+         * @description Re-sends the email-verification link to the logged-in user. Always answers 200 (including when the address is already verified) so it reveals nothing and is safe to call idempotently.
+         */
+        post: operations["resendVerification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/mfa/setup": {
         parameters: {
             query?: never;
@@ -5369,9 +5649,14 @@ export interface components {
             zip?: string;
             /** @description ISO 3166-1 alpha-2 code. */
             country?: string;
+            /** @description Nested address, accepted as an alias for the flat line1/city/state/ zip/country fields. A flat field wins when both are supplied; postal_code and zip are synonyms. */
+            billing_address?: components["schemas"]["BillingAddress"];
         };
         BillingAddress: {
             line1?: string;
+            line2?: string;
+            /** @description Synonym for zip. */
+            postal_code?: string;
             city?: string;
             state?: string;
             zip?: string;
@@ -5662,6 +5947,25 @@ export interface components {
             amount?: number;
             /**
              * Format: int64
+             * @description Taxable (net-of-tax) value of the credit, minor units. Present (non-zero) when the note recorded a tax breakdown at creation — invoice-linked credits slice the invoice's tax proportionally, downgrade credits carry the reversed proration tax. 0 on legacy rows and standalone goodwill credits (gross-only).
+             */
+            subtotal?: number;
+            /**
+             * Format: int64
+             * @description Tax reversed by this credit, minor units.
+             */
+            tax_amount?: number;
+            /** Format: int64 */
+            igst_amount?: number;
+            /** Format: int64 */
+            cgst_amount?: number;
+            /** Format: int64 */
+            sgst_amount?: number;
+            /** @description Tax regime of the breakdown (e.g. inter_state, intra_state); empty when none recorded. */
+            tax_type?: string;
+            hsn_code?: string;
+            /**
+             * Format: int64
              * @description Remaining unapplied credit.
              */
             balance?: number;
@@ -5687,7 +5991,7 @@ export interface components {
             quantity?: number;
             /** @description Price per unit in the lowest currency unit. */
             unit_price?: number;
-            /** @description quantity x unit_price, in the lowest currency unit. */
+            /** @description Line total in the lowest currency unit. Computed as quantity x unit_price for itemized lines; for a lump-sum line send `amount` directly with quantity/unit_price omitted. */
             amount?: number;
         };
         CreateQuoteRequest: {
@@ -6161,7 +6465,10 @@ export interface components {
             legal_name?: string;
             /** @description Optional; defaults to a slug of the name. */
             invoice_prefix?: string;
+            /** @description ISO 3166-1 alpha-2. `country` is accepted as an alias; country_code wins if both are sent. */
             country_code?: string;
+            /** @description Alias for country_code (the field /auth/register uses). */
+            country?: string;
         };
         /** @description A tenant's MCP server opt-in. */
         MCPSettings: {
@@ -6778,7 +7085,7 @@ export interface components {
         PathID: string;
         /** @description Free-text search filter. */
         SearchQuery: string;
-        /** @description Maximum number of records to return. */
+        /** @description Maximum records to return. Defaults to 50 when omitted and is capped at 1000 (a larger request returns the cap, not an error). Pass an explicit limit when you need the full set — omitting it silently returns only the first page. */
         Limit: number;
         /** @description 1-based page number. */
         Page: number;
@@ -6819,6 +7126,67 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
                 };
+            };
+        };
+    };
+    getMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Metrics in Prometheus text exposition format. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description METRICS_TOKEN is set and the bearer token did not match. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getPlatformMetrics: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cross-tenant platform metrics. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description FOUNDER_TOKEN is set and the bearer token did not match. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description FOUNDER_TOKEN is unset — the endpoint is disabled. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -7222,7 +7590,7 @@ export interface operations {
             query?: {
                 /** @description Free-text search filter. */
                 q?: components["parameters"]["SearchQuery"];
-                /** @description Maximum number of records to return. */
+                /** @description Maximum records to return. Defaults to 50 when omitted and is capped at 1000 (a larger request returns the cap, not an error). Pass an explicit limit when you need the full set — omitting it silently returns only the first page. */
                 limit?: components["parameters"]["Limit"];
                 /** @description 1-based page number. */
                 page?: components["parameters"]["Page"];
@@ -7477,6 +7845,253 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    previewStripeImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The Stripe export JSON. */
+        requestBody: {
+            content: {
+                "application/json": {
+                    customers?: Record<string, never>[];
+                    products?: Record<string, never>[];
+                    prices?: Record<string, never>[];
+                    subscriptions?: Record<string, never>[];
+                    payment_methods?: Record<string, never>[];
+                };
+            };
+        };
+        responses: {
+            /** @description The dry-run import plan. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items?: {
+                            /** @enum {string} */
+                            kind?: "customer" | "plan" | "subscription" | "payment_method";
+                            stripe_id?: string;
+                            label?: string;
+                            /** @enum {string} */
+                            action?: "create" | "link_existing" | "skip_already_imported" | "conflict" | "unsupported";
+                            detail?: string;
+                        }[];
+                        summary?: {
+                            [key: string]: number;
+                        };
+                        warnings?: string[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    previewRevenueCatImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The RevenueCat export JSON. */
+        requestBody: {
+            content: {
+                "application/json": {
+                    subscribers?: Record<string, never>[];
+                    products?: Record<string, never>[];
+                };
+            };
+        };
+        responses: {
+            /** @description The dry-run import plan. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items?: Record<string, never>[];
+                        summary?: {
+                            [key: string]: number;
+                        };
+                        warnings?: string[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    commitRevenueCatImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    subscribers?: Record<string, never>[];
+                    products?: Record<string, never>[];
+                };
+            };
+        };
+        responses: {
+            /** @description The commit result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        plan?: Record<string, never>;
+                        created?: {
+                            [key: string]: number;
+                        };
+                        failures?: Record<string, never>[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    previewChargebeeImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The Chargebee export JSON. */
+        requestBody: {
+            content: {
+                "application/json": {
+                    customers?: Record<string, never>[];
+                    plans?: Record<string, never>[];
+                    subscriptions?: Record<string, never>[];
+                };
+            };
+        };
+        responses: {
+            /** @description The dry-run import plan. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items?: {
+                            /** @enum {string} */
+                            kind?: "customer" | "plan" | "subscription";
+                            chargebee_id?: string;
+                            label?: string;
+                            /** @enum {string} */
+                            action?: "create" | "link_existing" | "skip_already_imported" | "conflict" | "unsupported";
+                            detail?: string;
+                        }[];
+                        summary?: {
+                            [key: string]: number;
+                        };
+                        warnings?: string[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    commitChargebeeImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The Chargebee export JSON (same shape as the preview endpoint). */
+        requestBody: {
+            content: {
+                "application/json": {
+                    customers?: Record<string, never>[];
+                    plans?: Record<string, never>[];
+                    subscriptions?: Record<string, never>[];
+                };
+            };
+        };
+        responses: {
+            /** @description The commit result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        plan?: Record<string, never>;
+                        created?: {
+                            [key: string]: number;
+                        };
+                        failures?: {
+                            kind?: string;
+                            stripe_id?: string;
+                            error?: string;
+                        }[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    commitStripeImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The Stripe export JSON (same shape as the preview endpoint). */
+        requestBody: {
+            content: {
+                "application/json": {
+                    customers?: Record<string, never>[];
+                    products?: Record<string, never>[];
+                    prices?: Record<string, never>[];
+                    subscriptions?: Record<string, never>[];
+                    payment_methods?: Record<string, never>[];
+                };
+            };
+        };
+        responses: {
+            /** @description The commit result. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        plan?: Record<string, never>;
+                        created?: {
+                            [key: string]: number;
+                        };
+                        failures?: {
+                            kind?: string;
+                            stripe_id?: string;
+                            error?: string;
+                        }[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     listCustomers: {
         parameters: {
             query?: {
@@ -7486,7 +8101,7 @@ export interface operations {
                 country?: string;
                 /** @description Filter by customer status. */
                 status?: "active" | "inactive";
-                /** @description Maximum number of records to return. */
+                /** @description Maximum records to return. Defaults to 50 when omitted and is capped at 1000 (a larger request returns the cap, not an error). Pass an explicit limit when you need the full set — omitting it silently returns only the first page. */
                 limit?: components["parameters"]["Limit"];
                 /** @description 1-based page number. */
                 page?: components["parameters"]["Page"];
@@ -7581,7 +8196,7 @@ export interface operations {
                 status?: components["schemas"]["SubscriptionStatus"];
                 /** @description Free-text search filter. */
                 q?: components["parameters"]["SearchQuery"];
-                /** @description Maximum number of records to return. */
+                /** @description Maximum records to return. Defaults to 50 when omitted and is capped at 1000 (a larger request returns the cap, not an error). Pass an explicit limit when you need the full set — omitting it silently returns only the first page. */
                 limit?: components["parameters"]["Limit"];
                 /** @description 1-based page number. */
                 page?: components["parameters"]["Page"];
@@ -8565,6 +9180,31 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    downloadCreditNotePDF: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Print-ready credit note document. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     approveCreditNote: {
         parameters: {
             query?: never;
@@ -8604,6 +9244,33 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Credit note rejected. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["CreditNote"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    voidCreditNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Credit note voided. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -8976,7 +9643,7 @@ export interface operations {
     listWebhookEndpointDeliveries: {
         parameters: {
             query?: {
-                /** @description Maximum number of records to return. */
+                /** @description Maximum records to return. Defaults to 50 when omitted and is capped at 1000 (a larger request returns the cap, not an error). Pass an explicit limit when you need the full set — omitting it silently returns only the first page. */
                 limit?: components["parameters"]["Limit"];
                 offset?: number;
                 /** @description Filter by derived delivery status. */
@@ -9009,7 +9676,7 @@ export interface operations {
     listEvents: {
         parameters: {
             query?: {
-                /** @description Maximum number of records to return. */
+                /** @description Maximum records to return. Defaults to 50 when omitted and is capped at 1000 (a larger request returns the cap, not an error). Pass an explicit limit when you need the full set — omitting it silently returns only the first page. */
                 limit?: components["parameters"]["Limit"];
                 offset?: number;
             };
@@ -10636,6 +11303,67 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["APIKey"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getBillingStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Billing status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        billing_status?: "trialing" | "active" | "past_due" | "canceled";
+                        plan_tier?: string;
+                        /** Format: date-time */
+                        trial_ends_at?: string;
+                        trial_days_left?: number;
+                        trial_expired?: boolean;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getBillingPlans: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Plan catalog. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        plans?: {
+                            tier?: string;
+                            name?: string;
+                            price?: string;
+                            period?: string;
+                            free_note?: string;
+                            features?: string[];
+                            cta?: string;
+                            recommended?: boolean;
+                        }[];
+                    };
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -14727,6 +15455,58 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+        };
+    };
+    verifyEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    token: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Email verified. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
+    resendVerification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Generic acknowledgement. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message?: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
         };
     };
     mfaSetup: {
