@@ -20,6 +20,28 @@ export interface ListParams {
     [key: string]: unknown;
 }
 
+/** Subscription list filters (all server-side). */
+export interface SubscriptionListParams extends ListParams {
+    /** Filter to one plan's subscriptions. */
+    plan_id?: string;
+    /** Keep subscriptions whose current period started at/after this RFC 3339 instant. */
+    started_after?: string;
+}
+
+/** Plan list filters (all server-side). */
+export interface PlanListParams extends ListParams {
+    /** Keep plans that have a price in this currency (e.g. "USD"). */
+    currency?: string;
+    /** Filter by billing interval unit (e.g. "month", "year"). */
+    interval_unit?: string;
+}
+
+/** Event feed filters (all server-side). */
+export interface EventListParams extends ListParams {
+    /** Filter to one event type (e.g. "invoice.paid"); `events.types()` lists the catalog. */
+    type?: string;
+}
+
 /**
  * A JSON value returned by (or sent to) the API. The API speaks JSON, so any
  * payload or response is one of these shapes.
@@ -371,7 +393,7 @@ export class Recurso {
     public plans = {
         create: (data: PlanInput) =>
             this.post<Res<'createPlan'>>('/v1/plans', { interval_count: 1, ...data }),
-        list: (params?: ListParams) => this.get<Res<'listPlans'>>('/v1/plans', params),
+        list: (params?: PlanListParams) => this.get<Res<'listPlans'>>('/v1/plans', params),
         get: (id: string) => this.get<Res<'getPlan'>>(`/v1/plans/${id}`),
         /**
          * Partial update of mutable plan fields — omitted fields are left
@@ -401,7 +423,7 @@ export class Recurso {
     public subscriptions = {
         create: (data: SubscriptionInput) =>
             this.post<Res<'createSubscription'>>('/v1/subscriptions', data),
-        list: (params?: ListParams) =>
+        list: (params?: SubscriptionListParams) =>
             this.get<Res<'listSubscriptions'>>('/v1/subscriptions', params),
         get: (id: string) => this.get<Res<'getSubscription'>>(`/v1/subscriptions/${id}`),
         update: (id: string, data: Body<'updateSubscription'>) =>
@@ -675,7 +697,7 @@ export class Recurso {
     };
 
     public events = {
-        list: (params?: ListParams) => this.get<Res<'listEvents'>>('/v1/events', params),
+        list: (params?: EventListParams) => this.get<Res<'listEvents'>>('/v1/events', params),
         types: () => this.get<Res<'listEventTypes'>>('/v1/events/types'),
         /** Delivery attempts of an event across all webhook endpoints. */
         deliveries: (id: string) =>

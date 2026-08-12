@@ -426,6 +426,83 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/import/revenuecat/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compare gate — prove the RevenueCat migration before cut-over
+         * @description Diffs the uploaded RevenueCat export against the tenant's live Recurso data with zero writes — coverage (subscribers with an email, active entitlements), fidelity (product price/currency/period; identity), and billing continuity (an entitlement whose expires_at drifted >1h from the imported period end is flagged). ready=true means zero issues.
+         */
+        post: operations["compareRevenueCatImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/import/compare-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List stored Compare runs
+         * @description Every persisted migration Compare run (newest first) — each one a citable receipt that a migration was proven before cut-over.
+         */
+        get: operations["listCompareReports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/import/compare-reports/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a stored Compare run */
+        get: operations["getCompareReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/import/compare-reports/{id}/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Printable Compare receipt
+         * @description Self-contained HTML document (print-to-PDF) stating what was checked, what matched, and the verdict.
+         */
+        get: operations["getCompareReportDocument"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/import/chargebee/preview": {
         parameters: {
             query?: never;
@@ -466,6 +543,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/import/chargebee/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compare gate — prove the Chargebee migration before cut-over
+         * @description Diffs the uploaded Chargebee export against the tenant's live Recurso data with zero writes — coverage, money-critical fidelity (plan price, currency, period; customer identity), and billing continuity (current_term_end drift >1h flagged as a double-billing risk). ready=true means zero issues.
+         */
+        post: operations["compareChargebeeImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/import/stripe/commit": {
         parameters: {
             query?: never;
@@ -480,6 +577,26 @@ export interface paths {
          * @description Imports the uploaded Stripe export, creating customers, plans, and subscriptions and recording an idempotency mapping for each. Re-running is safe: already-imported ids and records that already exist (by email or plan code) are skipped. Subscriptions are imported in their current billing state via a direct insert — no invoice, charge, or ledger entry is generated, so Recurso takes over at the next renewal instead of re-billing the current cycle. Per-object failures are returned in the response rather than aborting the whole import. Card payment methods are NOT imported — card data can't be migrated from a static export.
          */
         post: operations["commitStripeImport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/import/stripe/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compare gate — prove the migration before cut-over
+         * @description Diffs the uploaded Stripe export against the tenant's live Recurso data with zero writes. Three checks, per record: coverage (every importable source record exists in Recurso), fidelity (plan amount, currency, and interval; customer identity), and billing continuity (a subscription whose current_period_end drifted more than an hour is flagged — the double-billing / billing-gap risk). ready=true means zero issues. Run after a commit, before pointing billing at Recurso.
+         */
+        post: operations["compareStripeImport"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1817,7 +1934,11 @@ export interface paths {
          */
         get: operations["verifyPortalMagicLink"];
         put?: never;
-        post?: never;
+        /**
+         * Verify a magic link (token in body) and start a session
+         * @description Preferred over the GET form: the token travels in the request body, not the URL, so it is not written to Referer headers, browser history, or access logs. Exchanges the token for a 7-day portal session set as the `portal_session` cookie.
+         */
+        post: operations["verifyPortalMagicLinkPost"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2438,7 +2559,10 @@ export interface paths {
          * Export the general ledger (CSV)
          * @description Every posted transaction for the tenant, flattened with both account
          *     codes/names, amount, and provenance, as a CSV download. Read-only. Pass
-         *     `entity_id` to scope the export to one legal entity's ledger.
+         *     `entity_id` to scope the export to one legal entity's ledger. Pass
+         *     `month` and `year` together to export a single calendar month's
+         *     postings (the month-end close pack's period export); omit both for the
+         *     full ledger.
          */
         get: operations["exportGeneralLedger"];
         put?: never;
@@ -2840,6 +2964,30 @@ export interface paths {
          * @description Upserts the tenant's US tax identity (legal name, EIN, address). Presentation only — it does not affect tax computation.
          */
         put: operations["updateUSTaxConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/settings/invoice-branding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get invoice branding
+         * @description Returns the tenant's invoice presentation settings (display name, logo, signature, signatory, bank details, terms), or an empty default when none is set.
+         */
+        get: operations["getInvoiceBranding"];
+        /**
+         * Create or update invoice branding
+         * @description Upserts the tenant's invoice presentation settings. Logo and signature must be data:image/png or data:image/jpeg base64 URLs (max 300KB decoded). Presentation only — statutory seller identity (GST / W-9) still takes precedence on tax invoices.
+         */
+        put: operations["updateInvoiceBranding"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3457,7 +3605,7 @@ export interface paths {
         };
         /**
          * Recent accounting sync log
-         * @description The 50 most recent per-entity sync results.
+         * @description Recent per-entity sync results, newest first (paged via limit/offset).
          */
         get: operations["getAccountingSyncStatus"];
         put?: never;
@@ -4503,28 +4651,7 @@ export interface paths {
          * List social-login providers and whether each is enabled
          * @description Returns every provider this build understands with an `enabled` flag. A provider is enabled only when its client id AND secret env vars are set (GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET). The dashboard uses this to show/hide the social buttons.
          */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Provider list. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            providers?: components["schemas"]["OAuthProviderStatus"][];
-                        };
-                    };
-                };
-            };
-        };
+        get: operations["listOAuthProviders"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4544,27 +4671,7 @@ export interface paths {
          * Begin an OAuth login (redirect to the provider)
          * @description Generates a CSRF `state` and a PKCE verifier, binds them into a short-lived signed httpOnly cookie (`recurso_oauth_state`, scoped to /auth/oauth), and 302-redirects to the provider's authorize URL. Unknown or disabled providers return 404.
          */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    provider: "google" | "github";
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Redirect to the provider's authorize URL. Sets the state cookie. */
-                302: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                404: components["responses"]["NotFound"];
-            };
-        };
+        get: operations["startOAuthLogin"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4584,31 +4691,7 @@ export interface paths {
          * OAuth callback (provider redirects here)
          * @description Validates `state` against the cookie (constant-time), exchanges the code with PKCE, fetches userinfo and requires a verified email (Google: email_verified==true; GitHub: a primary verified email). Then find-or-create: (1) an existing identity logs in; (2) a matching verified email links a new identity and logs in; (3) a brand-new email creates a tenant + owner user. On success sets the `recurso_session` cookie and 302s to `{DASHBOARD_URL}/`. On failure 302s to `{DASHBOARD_URL}/login?error=oauth` (never an open redirect). A state mismatch returns 403.
          */
-        get: {
-            parameters: {
-                query?: {
-                    code?: string;
-                    state?: string;
-                };
-                header?: never;
-                path: {
-                    provider: "google" | "github";
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Redirect to the dashboard on success, or to the login error page on failure. Sets the session cookie on success. */
-                302: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                403: components["responses"]["Forbidden"];
-                404: components["responses"]["NotFound"];
-            };
-        };
+        get: operations["oauthCallback"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4630,32 +4713,7 @@ export interface paths {
          *     only the public key, mode, and whether a webhook secret is set) and
          *     whether the credential vault is available.
          */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Connections and vault status. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: {
-                                connections?: components["schemas"]["GatewayConnectionView"][];
-                                vault_ready?: boolean;
-                            };
-                        };
-                    };
-                };
-                401: components["responses"]["Unauthorized"];
-            };
-        };
+        get: operations["listGatewayConnections"];
         put?: never;
         /**
          * Connect (or replace) a payment gateway
@@ -4663,52 +4721,7 @@ export interface paths {
          *     write-only and never returned. Replaces any existing active connection
          *     for the provider. Owner/admin only.
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** @enum {string} */
-                        provider: "stripe" | "razorpay";
-                        /** @enum {string} */
-                        mode?: "test" | "live";
-                        /** @description Razorpay key_id / Stripe publishable key (not secret). */
-                        public_key?: string;
-                        secret_key: string;
-                        /** @description Optional; can be set later once the webhook URL is known. */
-                        webhook_secret?: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description Connected. */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["GatewayConnectionView"];
-                        };
-                    };
-                };
-                400: components["responses"]["BadRequest"];
-                401: components["responses"]["Unauthorized"];
-                403: components["responses"]["Forbidden"];
-                /** @description Credential vault unavailable (GATEWAY_ENCRYPTION_KEY not set). */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        post: operations["createGatewayConnection"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4729,29 +4742,7 @@ export interface paths {
          * Disconnect a payment gateway
          * @description Soft-disconnects the tenant's active connection for a provider. Owner/admin only.
          */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    provider: "stripe" | "razorpay";
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Disconnected. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                401: components["responses"]["Unauthorized"];
-                403: components["responses"]["Forbidden"];
-                404: components["responses"]["NotFound"];
-            };
-        };
+        delete: operations["deleteGatewayConnection"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4772,36 +4763,7 @@ export interface paths {
          *     gateway console using the per-connection URL, then paste the secret here.
          *     Owner/admin only.
          */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    provider: "stripe" | "razorpay";
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        webhook_secret?: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description Updated. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                400: components["responses"]["BadRequest"];
-                401: components["responses"]["Unauthorized"];
-                403: components["responses"]["Forbidden"];
-                404: components["responses"]["NotFound"];
-            };
-        };
+        put: operations["setGatewayWebhookSecret"];
         post?: never;
         delete?: never;
         options?: never;
@@ -4822,32 +4784,7 @@ export interface paths {
          *     storage (S3/MinIO) connections — secret-free (only non-secret config like
          *     region/bucket, and whether secrets are set) — plus vault availability.
          */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Connections and vault status. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: {
-                                connections?: components["schemas"]["IntegrationConnectionView"][];
-                                vault_ready?: boolean;
-                            };
-                        };
-                    };
-                };
-                401: components["responses"]["Unauthorized"];
-            };
-        };
+        get: operations["listIntegrationConnections"];
         put?: never;
         /**
          * Connect (or replace) a tax/CRM/storage integration
@@ -4855,51 +4792,7 @@ export interface paths {
          *     are write-only. Replaces any existing active connection for the
          *     (category, provider). Owner/admin only.
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": {
-                        /** @enum {string} */
-                        category: "tax" | "crm" | "storage";
-                        /** @description taxjar / avalara / hubspot / s3. */
-                        provider: string;
-                        /** @description Provider config (e.g. api_key; or bucket/region/keys for s3). */
-                        config: {
-                            [key: string]: string;
-                        };
-                    };
-                };
-            };
-            responses: {
-                /** @description Connected. */
-                201: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["IntegrationConnectionView"];
-                        };
-                    };
-                };
-                400: components["responses"]["BadRequest"];
-                401: components["responses"]["Unauthorized"];
-                403: components["responses"]["Forbidden"];
-                /** @description Credential vault unavailable (GATEWAY_ENCRYPTION_KEY not set). */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-            };
-        };
+        post: operations["createIntegrationConnection"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4920,30 +4813,7 @@ export interface paths {
          * Disconnect a tax/CRM/storage integration
          * @description Soft-disconnects the tenant's active connection. Owner/admin only.
          */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    category: "tax" | "crm" | "storage";
-                    provider: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Disconnected. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                401: components["responses"]["Unauthorized"];
-                403: components["responses"]["Forbidden"];
-                404: components["responses"]["NotFound"];
-            };
-        };
+        delete: operations["deleteIntegrationConnection"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4957,90 +4827,15 @@ export interface paths {
             cookie?: never;
         };
         /** Get the caller tenant's SAML SSO connection */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description The tenant's SSO connection. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["SSOConnection"];
-                        };
-                    };
-                };
-                401: components["responses"]["Unauthorized"];
-                404: components["responses"]["NotFound"];
-            };
-        };
+        get: operations["getSSOConnection"];
         /**
          * Create or update the tenant's SAML IdP configuration (owner/admin only)
          * @description Upserts the tenant's IdP config. Provide either `idp_metadata_xml`, or all of `idp_entity_id` + `idp_sso_url` + `idp_certificate`. Enabling a connection that is not fully configured is rejected. Members get 403.
          */
-        put: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["SSOConnectionUpsertRequest"];
-                };
-            };
-            responses: {
-                /** @description The upserted connection. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            data?: components["schemas"]["SSOConnection"];
-                        };
-                    };
-                };
-                400: components["responses"]["BadRequest"];
-                401: components["responses"]["Unauthorized"];
-                403: components["responses"]["Forbidden"];
-            };
-        };
+        put: operations["upsertSSOConnection"];
         post?: never;
         /** Delete the tenant's SAML SSO connection (owner/admin only) */
-        delete: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path?: never;
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Connection removed. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": {
-                            message?: string;
-                        };
-                    };
-                };
-                401: components["responses"]["Unauthorized"];
-                403: components["responses"]["Forbidden"];
-                404: components["responses"]["NotFound"];
-            };
-        };
+        delete: operations["deleteSSOConnection"];
         options?: never;
         head?: never;
         patch?: never;
@@ -5057,29 +4852,7 @@ export interface paths {
          * SP metadata XML for a tenant
          * @description Returns the Service Provider metadata document (application/samlmetadata+xml). 404 when the tenant has no SSO connection.
          */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    tenantID: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description SP metadata XML. */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/samlmetadata+xml": string;
-                    };
-                };
-                404: components["responses"]["NotFound"];
-            };
-        };
+        get: operations["getSAMLMetadata"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5099,27 +4872,7 @@ export interface paths {
          * SP-initiated SAML login (redirect to the IdP)
          * @description 302-redirects to the IdP with a SAML AuthnRequest when the tenant's connection is enabled; 404 otherwise.
          */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    tenantID: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description Redirect to the IdP. */
-                302: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                404: components["responses"]["NotFound"];
-            };
-        };
+        get: operations["samlLogin"];
         put?: never;
         post?: never;
         delete?: never;
@@ -5141,36 +4894,7 @@ export interface paths {
          * Assertion Consumer Service (IdP posts the SAMLResponse here)
          * @description Validates the SAMLResponse against the tenant's IdP certificate, extracts the email, and maps it to an EXISTING user in the tenant (no JIT provisioning). On success sets the `recurso_session` cookie and 302s to the dashboard. Unknown email → 403; disabled/unconfigured tenant → 404; invalid assertion → 401.
          */
-        post: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    tenantID: string;
-                };
-                cookie?: never;
-            };
-            requestBody: {
-                content: {
-                    "application/x-www-form-urlencoded": {
-                        SAMLResponse?: string;
-                        RelayState?: string;
-                    };
-                };
-            };
-            responses: {
-                /** @description Redirect to the dashboard on success. Sets the session cookie. */
-                302: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                401: components["responses"]["Unauthorized"];
-                403: components["responses"]["Forbidden"];
-                404: components["responses"]["NotFound"];
-            };
-        };
+        post: operations["samlACS"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6475,6 +6199,14 @@ export interface components {
             /** @description When true, AI agents may run money-path / destructive MCP tools (convert quote to invoice, cancel subscription, issue credit note, top up wallet, …) against this tenant. Off by default. */
             tier3_enabled?: boolean;
         };
+        /** @description Migration-compare coverage for one record kind. */
+        CompareCount: {
+            /** @description Importable records in the export. */
+            source?: number;
+            /** @description Found in Recurso. */
+            matched?: number;
+            missing?: number;
+        };
         /** @description A tenant's US tax identity (W-9) — the seller party shown on US sales-tax invoices. Presentation only. */
         USTaxConfig: {
             /** @description Seller legal name shown on US invoices. */
@@ -6483,6 +6215,21 @@ export interface components {
             ein?: string;
             /** @description Seller postal address shown on US invoices. */
             address?: string;
+        };
+        /** @description A tenant's invoice presentation settings — display name, logo, signature, signatory, bank details and terms rendered on invoice documents. Presentation only; statutory seller identity (GST / W-9) takes precedence on tax invoices. */
+        InvoiceBranding: {
+            /** @description Display name shown at the top of invoices (max 200 chars). */
+            company_name?: string;
+            /** @description Logo as a data:image/png or data:image/jpeg base64 URL (max 300KB decoded). */
+            logo_data_url?: string;
+            /** @description Signature image as a data:image/png or data:image/jpeg base64 URL (max 300KB decoded). */
+            signature_data_url?: string;
+            /** @description Name printed under the signature line (max 200 chars). */
+            signatory_name?: string;
+            /** @description Bank/remittance details shown in the invoice footer (max 4000 chars). */
+            bank_details?: string;
+            /** @description Terms and conditions shown in the invoice footer (max 4000 chars). */
+            terms?: string;
         };
         /** @description A tenant's EU e-invoicing configuration — the opt-in flag plus the EN 16931 seller party. */
         EUEInvoiceConfig: {
@@ -7590,6 +7337,10 @@ export interface operations {
             query?: {
                 /** @description Free-text search filter. */
                 q?: components["parameters"]["SearchQuery"];
+                /** @description Keep plans that have a price in this currency. */
+                currency?: string;
+                /** @description Filter by billing interval unit (e.g. `month`, `year`). */
+                interval_unit?: string;
                 /** @description Maximum records to return. Defaults to 50 when omitted and is capped at 1000 (a larger request returns the cap, not an error). Pass an explicit limit when you need the full set — omitting it silently returns only the first page. */
                 limit?: components["parameters"]["Limit"];
                 /** @description 1-based page number. */
@@ -7963,6 +7714,134 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    compareRevenueCatImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The same RevenueCat export JSON the commit consumed. */
+        requestBody: {
+            content: {
+                "application/json": {
+                    subscribers?: Record<string, never>[];
+                    products?: Record<string, never>[];
+                };
+            };
+        };
+        responses: {
+            /** @description The compare report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        source?: string;
+                        customers?: components["schemas"]["CompareCount"];
+                        plans?: components["schemas"]["CompareCount"];
+                        subscriptions?: components["schemas"]["CompareCount"];
+                        issues?: {
+                            kind?: string;
+                            external_id?: string;
+                            field?: string;
+                            source?: string;
+                            recurso?: string;
+                        }[];
+                        ready?: boolean;
+                        /** Format: date-time */
+                        generated_at?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listCompareReports: {
+        parameters: {
+            query?: {
+                /** @description Max runs returned (default 50 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Stored runs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            id?: string;
+                            source?: string;
+                            ready?: boolean;
+                            /** Format: date-time */
+                            generated_at?: string;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getCompareReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The stored run with its full report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: Record<string, never>;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getCompareReportDocument: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The printable document. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     previewChargebeeImport: {
         parameters: {
             query?: never;
@@ -8049,6 +7928,52 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    compareChargebeeImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The same Chargebee export JSON the commit consumed. */
+        requestBody: {
+            content: {
+                "application/json": {
+                    customers?: Record<string, never>[];
+                    plans?: Record<string, never>[];
+                    subscriptions?: Record<string, never>[];
+                };
+            };
+        };
+        responses: {
+            /** @description The compare report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        source?: string;
+                        customers?: components["schemas"]["CompareCount"];
+                        plans?: components["schemas"]["CompareCount"];
+                        subscriptions?: components["schemas"]["CompareCount"];
+                        issues?: {
+                            kind?: string;
+                            external_id?: string;
+                            field?: string;
+                            source?: string;
+                            recurso?: string;
+                        }[];
+                        ready?: boolean;
+                        /** Format: date-time */
+                        generated_at?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     commitStripeImport: {
         parameters: {
             query?: never;
@@ -8085,6 +8010,54 @@ export interface operations {
                             stripe_id?: string;
                             error?: string;
                         }[];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    compareStripeImport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The same Stripe export JSON the commit consumed. */
+        requestBody: {
+            content: {
+                "application/json": {
+                    customers?: Record<string, never>[];
+                    products?: Record<string, never>[];
+                    prices?: Record<string, never>[];
+                    subscriptions?: Record<string, never>[];
+                    payment_methods?: Record<string, never>[];
+                };
+            };
+        };
+        responses: {
+            /** @description The compare report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        source?: string;
+                        customers?: components["schemas"]["CompareCount"];
+                        plans?: components["schemas"]["CompareCount"];
+                        subscriptions?: components["schemas"]["CompareCount"];
+                        issues?: {
+                            kind?: string;
+                            external_id?: string;
+                            field?: string;
+                            source?: string;
+                            recurso?: string;
+                        }[];
+                        ready?: boolean;
+                        /** Format: date-time */
+                        generated_at?: string;
                     };
                 };
             };
@@ -8194,6 +8167,10 @@ export interface operations {
             query?: {
                 /** @description Filter by subscription status. */
                 status?: components["schemas"]["SubscriptionStatus"];
+                /** @description Filter to one plan's subscriptions. */
+                plan_id?: string;
+                /** @description Keep subscriptions whose current period started at or after this RFC 3339 instant. */
+                started_after?: string;
                 /** @description Free-text search filter. */
                 q?: components["parameters"]["SearchQuery"];
                 /** @description Maximum records to return. Defaults to 50 when omitted and is capped at 1000 (a larger request returns the cap, not an error). Pass an explicit limit when you need the full set — omitting it silently returns only the first page. */
@@ -8442,7 +8419,12 @@ export interface operations {
     };
     listUnbilledCharges: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Max rows returned (clamped to 1000). */
+                limit?: number;
+                /** @description Rows to skip */
+                offset?: number;
+            };
             header?: never;
             path: {
                 id: components["parameters"]["PathID"];
@@ -9676,8 +9658,11 @@ export interface operations {
     listEvents: {
         parameters: {
             query?: {
-                /** @description Maximum records to return. Defaults to 50 when omitted and is capped at 1000 (a larger request returns the cap, not an error). Pass an explicit limit when you need the full set — omitting it silently returns only the first page. */
-                limit?: components["parameters"]["Limit"];
+                /** @description Filter to one event type (e.g. `invoice.paid`). */
+                type?: string;
+                /** @description Max rows returned (default 50 */
+                limit?: number;
+                /** @description Rows to skip. */
                 offset?: number;
             };
             header?: never;
@@ -10521,6 +10506,36 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    verifyPortalMagicLinkPost: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    token: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Session created. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message?: string;
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     getPortalProfile: {
         parameters: {
             query?: never;
@@ -11001,6 +11016,8 @@ export interface operations {
                 content: {
                     "application/json": {
                         data?: components["schemas"]["UsageStats"][];
+                        /** @description Distinct customers with any recorded usage. */
+                        customers_metered?: number;
                     };
                 };
             };
@@ -11153,6 +11170,10 @@ export interface operations {
     getCollectionsQueue: {
         parameters: {
             query?: {
+                /** @description Page size (default 50 */
+                limit?: number;
+                /** @description Rows to skip (overrides page-derived offset). */
+                offset?: number;
                 /** @description Narrow to a single recovery status. */
                 status?: "past_due" | "uncollectible";
                 /** @description Narrow to invoices owned by a specific recovery engine. */
@@ -11456,6 +11477,11 @@ export interface operations {
         parameters: {
             query: {
                 account_id: string;
+                /** @description Filter to one posting code (e.g. 3 = payment). Omit for all. */
+                code?: number;
+                /** @description Page size (default 50, max 250). */
+                limit?: number;
+                offset?: number;
             };
             header?: never;
             path?: never;
@@ -11511,6 +11537,8 @@ export interface operations {
             query?: {
                 /** @description Legal entity to scope the tax config to (Multi-Entity Books). Omit for the tenant's primary entity / default config. */
                 entity_id?: components["parameters"]["EntityIdQuery"];
+                month?: number;
+                year?: number;
             };
             header?: never;
             path?: never;
@@ -12295,6 +12323,57 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    getInvoiceBranding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invoice branding. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["InvoiceBranding"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    updateInvoiceBranding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvoiceBranding"];
+            };
+        };
+        responses: {
+            /** @description Branding saved. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["InvoiceBranding"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     listEntities: {
         parameters: {
             query?: never;
@@ -12632,6 +12711,10 @@ export interface operations {
     listReferrals: {
         parameters: {
             query?: {
+                /** @description Page size (default 50 */
+                limit?: number;
+                /** @description Rows to skip (overrides page-derived offset). */
+                offset?: number;
                 /** @description 1-based page number. */
                 page?: components["parameters"]["Page"];
                 /** @description Records per page (capped at 250). */
@@ -12761,6 +12844,10 @@ export interface operations {
     listGifts: {
         parameters: {
             query?: {
+                /** @description Page size (default 50 */
+                limit?: number;
+                /** @description Rows to skip (overrides page-derived offset). */
+                offset?: number;
                 /** @description 1-based page number. */
                 page?: components["parameters"]["Page"];
                 /** @description Records per page (capped at 250). */
@@ -13654,6 +13741,10 @@ export interface operations {
     listHighRiskCustomers: {
         parameters: {
             query?: {
+                /** @description Max rows returned (clamped to 1000). */
+                limit?: number;
+                /** @description Rows to skip */
+                offset?: number;
                 /** @description Minimum churn score (0-100) to include. */
                 threshold?: number;
             };
@@ -15675,6 +15766,446 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listOAuthProviders: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Provider list. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        providers?: components["schemas"]["OAuthProviderStatus"][];
+                    };
+                };
+            };
+        };
+    };
+    startOAuthLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "google" | "github";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the provider's authorize URL. Sets the state cookie. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    oauthCallback: {
+        parameters: {
+            query?: {
+                code?: string;
+                state?: string;
+            };
+            header?: never;
+            path: {
+                provider: "google" | "github";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the dashboard on success, or to the login error page on failure. Sets the session cookie on success. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listGatewayConnections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Connections and vault status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            connections?: components["schemas"]["GatewayConnectionView"][];
+                            vault_ready?: boolean;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createGatewayConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    provider: "stripe" | "razorpay";
+                    /** @enum {string} */
+                    mode?: "test" | "live";
+                    /** @description Razorpay key_id / Stripe publishable key (not secret). */
+                    public_key?: string;
+                    secret_key: string;
+                    /** @description Optional; can be set later once the webhook URL is known. */
+                    webhook_secret?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Connected. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["GatewayConnectionView"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Credential vault unavailable (GATEWAY_ENCRYPTION_KEY not set). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteGatewayConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "stripe" | "razorpay";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Disconnected. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    setGatewayWebhookSecret: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "stripe" | "razorpay";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    webhook_secret?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Updated. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listIntegrationConnections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Connections and vault status. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            connections?: components["schemas"]["IntegrationConnectionView"][];
+                            vault_ready?: boolean;
+                        };
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createIntegrationConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @enum {string} */
+                    category: "tax" | "crm" | "storage";
+                    /** @description taxjar / avalara / ziptax / hubspot / s3. */
+                    provider: string;
+                    /** @description Provider config (e.g. api_key; or bucket/region/keys for s3). */
+                    config: {
+                        [key: string]: string;
+                    };
+                };
+            };
+        };
+        responses: {
+            /** @description Connected. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["IntegrationConnectionView"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            /** @description Credential vault unavailable (GATEWAY_ENCRYPTION_KEY not set). */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    deleteIntegrationConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                category: "tax" | "crm" | "storage";
+                provider: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Disconnected. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getSSOConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The tenant's SSO connection. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["SSOConnection"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    upsertSSOConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SSOConnectionUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description The upserted connection. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["SSOConnection"];
+                    };
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    deleteSSOConnection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Connection removed. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        message?: string;
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getSAMLMetadata: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SP metadata XML. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/samlmetadata+xml": string;
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    samlLogin: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the IdP. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    samlACS: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tenantID: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": {
+                    SAMLResponse?: string;
+                    RelayState?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Redirect to the dashboard on success. Sets the session cookie. */
+            302: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
