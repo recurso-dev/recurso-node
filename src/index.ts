@@ -24,10 +24,26 @@ export interface ListParams {
 export interface SubscriptionListParams extends ListParams {
     /** Filter to one plan's subscriptions. */
     plan_id?: string;
+<<<<<<< HEAD
+    /** Filter to one customer's subscriptions. */
+    customer_id?: string;
+=======
+>>>>>>> origin/main
     /** Keep subscriptions whose current period started at/after this RFC 3339 instant. */
     started_after?: string;
 }
 
+<<<<<<< HEAD
+/** Invoice list filters (all server-side). */
+export interface InvoiceListParams extends ListParams {
+    /** Filter to one customer's invoices. */
+    customer_id?: string;
+    /** Filter to one subscription's invoices. Ignored when customer_id is also set. */
+    subscription_id?: string;
+}
+
+=======
+>>>>>>> origin/main
 /** Plan list filters (all server-side). */
 export interface PlanListParams extends ListParams {
     /** Keep plans that have a price in this currency (e.g. "USD"). */
@@ -40,6 +56,11 @@ export interface PlanListParams extends ListParams {
 export interface EventListParams extends ListParams {
     /** Filter to one event type (e.g. "invoice.paid"); `events.types()` lists the catalog. */
     type?: string;
+<<<<<<< HEAD
+    /** Filter to one object's events — the per-object timeline. Takes precedence over `type`. */
+    object_id?: string;
+=======
+>>>>>>> origin/main
 }
 
 /**
@@ -476,7 +497,9 @@ export class Recurso {
     };
 
     public invoices = {
-        list: (params?: ListParams) => this.get<Res<'listInvoices'>>('/v1/invoices', params),
+        list: (params?: InvoiceListParams) => this.get<Res<'listInvoices'>>('/v1/invoices', params),
+        /** One invoice, tenant-scoped; a foreign or missing id is a flat 404. */
+        get: (id: string) => this.get<Res<'getInvoice'>>(`/v1/invoices/${id}`),
         /** Public PDF download URL for an invoice. */
         pdfUrl: (id: string) => `${this.client.defaults.baseURL}/v1/invoices/${id}/pdf`,
         eInvoiceStatus: (id: string) =>
@@ -648,6 +671,8 @@ export class Recurso {
             this.post<Res<'createCreditNote'>>('/v1/credit-notes', data),
         list: (params?: ListParams) =>
             this.get<Res<'listCreditNotes'>>('/v1/credit-notes', params),
+        /** One credit note, tenant-scoped; a foreign or missing id is a flat 404. */
+        get: (id: string) => this.get<Res<'getCreditNote'>>(`/v1/credit-notes/${id}`),
     };
 
     public quotes = {

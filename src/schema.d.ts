@@ -887,6 +887,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/invoices/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an invoice by id
+         * @description One invoice, tenant-scoped. A foreign or missing invoice is a flat 404. Serves the dashboard's addressable /invoices/:id route.
+         */
+        get: operations["getInvoice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/invoices/{id}/pdf": {
         parameters: {
             query?: never;
@@ -1133,6 +1153,26 @@ export interface paths {
          * @description Returns a print-ready HTML rendering of the credit note, tenant-scoped. Requires authentication (API key or dashboard session): the document carries the customer's legal name and address, so it is never publicly fetchable by UUID.
          */
         get: operations["downloadCreditNotePDF"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/credit-notes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a credit note by id
+         * @description One credit note, tenant-scoped. A foreign or missing note is a flat 404. Serves the dashboard's addressable /credit-notes/:id route.
+         */
+        get: operations["getCreditNote"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8169,6 +8209,8 @@ export interface operations {
                 status?: components["schemas"]["SubscriptionStatus"];
                 /** @description Filter to one plan's subscriptions. */
                 plan_id?: string;
+                /** @description Filter to one customer's subscriptions. */
+                customer_id?: string;
                 /** @description Keep subscriptions whose current period started at or after this RFC 3339 instant. */
                 started_after?: string;
                 /** @description Free-text search filter. */
@@ -8635,7 +8677,12 @@ export interface operations {
     };
     listInvoices: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Filter to one customer's invoices (tenant-scoped; a foreign customer id yields an empty page). */
+                customer_id?: string;
+                /** @description Filter to one subscription's invoices (tenant-scoped). Ignored when customer_id is also provided. */
+                subscription_id?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8654,6 +8701,32 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getInvoice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PathID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The invoice. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Invoice"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     downloadInvoicePDF: {
@@ -9187,6 +9260,32 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getCreditNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["PathID"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The credit note. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["CreditNote"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     approveCreditNote: {
         parameters: {
             query?: never;
@@ -9625,8 +9724,9 @@ export interface operations {
     listWebhookEndpointDeliveries: {
         parameters: {
             query?: {
-                /** @description Maximum records to return. Defaults to 50 when omitted and is capped at 1000 (a larger request returns the cap, not an error). Pass an explicit limit when you need the full set — omitting it silently returns only the first page. */
-                limit?: components["parameters"]["Limit"];
+                /** @description Max rows returned (default 50 */
+                limit?: number;
+                /** @description Rows to skip. */
                 offset?: number;
                 /** @description Filter by derived delivery status. */
                 status?: "pending" | "succeeded" | "failed";
@@ -9660,6 +9760,8 @@ export interface operations {
             query?: {
                 /** @description Filter to one event type (e.g. `invoice.paid`). */
                 type?: string;
+                /** @description Filter to one object's events (per-object timeline); takes precedence over `type`. */
+                object_id?: string;
                 /** @description Max rows returned (default 50 */
                 limit?: number;
                 /** @description Rows to skip. */
