@@ -24,12 +24,16 @@ export interface ListParams {
 export interface SubscriptionListParams extends ListParams {
     /** Filter to one plan's subscriptions. */
     plan_id?: string;
+<<<<<<< HEAD
     /** Filter to one customer's subscriptions. */
     customer_id?: string;
+=======
+>>>>>>> origin/main
     /** Keep subscriptions whose current period started at/after this RFC 3339 instant. */
     started_after?: string;
 }
 
+<<<<<<< HEAD
 /** Invoice list filters (all server-side). */
 export interface InvoiceListParams extends ListParams {
     /** Filter to one customer's invoices. */
@@ -38,6 +42,8 @@ export interface InvoiceListParams extends ListParams {
     subscription_id?: string;
 }
 
+=======
+>>>>>>> origin/main
 /** Plan list filters (all server-side). */
 export interface PlanListParams extends ListParams {
     /** Keep plans that have a price in this currency (e.g. "USD"). */
@@ -50,8 +56,11 @@ export interface PlanListParams extends ListParams {
 export interface EventListParams extends ListParams {
     /** Filter to one event type (e.g. "invoice.paid"); `events.types()` lists the catalog. */
     type?: string;
+<<<<<<< HEAD
     /** Filter to one object's events — the per-object timeline. Takes precedence over `type`. */
     object_id?: string;
+=======
+>>>>>>> origin/main
 }
 
 /**

@@ -9760,6 +9760,8 @@ export interface operations {
             query?: {
                 /** @description Filter to one event type (e.g. `invoice.paid`). */
                 type?: string;
+                /** @description Filter to one object's events (per-object timeline); takes precedence over `type`. */
+                object_id?: string;
                 /** @description Max rows returned (default 50 */
                 limit?: number;
                 /** @description Rows to skip. */
