@@ -294,6 +294,7 @@ const cases: Record<string, MethodCase[]> = {
 
     invoices: [
         { method: 'list', call: (r) => r.invoices.list(listParams), verb: 'get', path: '/v1/invoices', params: listParams },
+        { method: 'get', call: (r) => r.invoices.get('inv_1'), verb: 'get', path: '/v1/invoices/inv_1' },
         { method: 'eInvoiceStatus', call: (r) => r.invoices.eInvoiceStatus('inv_1'), verb: 'get', path: '/v1/invoices/inv_1/einvoice' },
         {
             method: 'retryEInvoice',
@@ -430,6 +431,7 @@ const cases: Record<string, MethodCase[]> = {
     creditNotes: [
         { method: 'create', call: (r) => r.creditNotes.create(body), verb: 'post', path: '/v1/credit-notes', body },
         { method: 'list', call: (r) => r.creditNotes.list(listParams), verb: 'get', path: '/v1/credit-notes', params: listParams },
+        { method: 'get', call: (r) => r.creditNotes.get('cn_1'), verb: 'get', path: '/v1/credit-notes/cn_1' },
     ],
 
     quotes: [
