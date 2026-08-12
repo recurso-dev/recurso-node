@@ -911,6 +911,20 @@ describe('list params passthrough', () => {
         expect(mocks.client.get.mock.calls[0][1].params).toBe(params);
     });
 
+    it('accepts the typed server-side filters (plan/date, currency/interval, type)', async () => {
+        const subParams = { plan_id: 'plan_1', started_after: '2026-08-01T00:00:00Z' };
+        await recurso.subscriptions.list(subParams);
+        expect(mocks.client.get).toHaveBeenCalledWith('/v1/subscriptions', { params: subParams });
+
+        const planParams = { currency: 'INR', interval_unit: 'month' };
+        await recurso.plans.list(planParams);
+        expect(mocks.client.get).toHaveBeenCalledWith('/v1/plans', { params: planParams });
+
+        const eventParams = { type: 'invoice.paid', limit: 5 };
+        await recurso.events.list(eventParams);
+        expect(mocks.client.get).toHaveBeenCalledWith('/v1/events', { params: eventParams });
+    });
+
     it('sends undefined params when a list method is called without arguments', async () => {
         await recurso.plans.list();
         expect(mocks.client.get).toHaveBeenCalledWith('/v1/plans', { params: undefined });
