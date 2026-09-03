@@ -40,6 +40,26 @@ async function _assertResponsesAreTyped(client: Recurso): Promise<void> {
     const alerts = await client.churn.alerts();
     const firstAlert: ChurnAlert | undefined = alerts.data?.[0];
     void firstAlert;
+
+    // 1.9.0 surface: inline (non-$ref) response schemas are typed too.
+    const attempts = await client.paymentAttempts.list({ status: 'failed' });
+    const attemptStatus: 'initiated' | 'processing' | 'succeeded' | 'failed' | 'returned' | undefined =
+        attempts.data?.[0]?.status;
+    void attemptStatus;
+
+    const runs = await client.finance.reconciliationRuns({ limit: 10 });
+    const discrepancies: number | undefined = runs.data?.[0]?.total_discrepancies;
+    void discrepancies;
+
+    const history = await client.subscriptions.history('sub_1');
+    const changeType: 'status' | 'plan' | undefined = history.data?.history?.[0]?.change_type;
+    void changeType;
+
+    // Document endpoints resolve to the raw text, not a JSON envelope.
+    const html: string = await client.invoices.pdf('inv_1');
+    const csv: string = await client.ledger.export({ month: 1, year: 2026 });
+    void html;
+    void csv;
 }
 
 void _assertResponsesAreTyped;

@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => {
         get: vi.fn(),
         post: vi.fn(),
         put: vi.fn(),
+        patch: vi.fn(),
         delete: vi.fn(),
         defaults: { baseURL: undefined as string | undefined },
     };
@@ -38,13 +39,14 @@ let recurso: Recurso;
 
 beforeEach(() => {
     mocks.create.mockClear();
-    for (const verb of ['get', 'post', 'put', 'delete'] as const) {
+    for (const verb of VERBS) {
         mocks.client[verb].mockReset().mockResolvedValue(RESPONSE);
     }
     recurso = new Recurso(API_KEY, BASE_URL);
 });
 
-type Verb = 'get' | 'post' | 'put' | 'delete';
+const VERBS = ['get', 'post', 'put', 'patch', 'delete'] as const;
+type Verb = (typeof VERBS)[number];
 
 interface MethodCase {
     /** Method name, for the subtest title. */
@@ -55,8 +57,10 @@ interface MethodCase {
     path: string;
     /** Expected query params object (GET) — omit for "no params passed". */
     params?: object;
-    /** Expected request body (POST/PUT) — omit for "no body passed". */
+    /** Expected request body (POST/PUT/PATCH) — omit for "no body passed". */
     body?: unknown;
+    /** Set for non-JSON document endpoints (HTML/CSV/text) fetched via `responseType: 'text'`. */
+    responseType?: 'text';
 }
 
 const listParams = { page: 2, limit: 50, q: 'search', status: 'active' };
@@ -107,6 +111,12 @@ const cases: Record<string, MethodCase[]> = {
             verb: 'get',
             path: '/v1/customers/cus_1/credit-statement',
         },
+        {
+            method: 'financialSummary',
+            call: (r) => r.customers.financialSummary('cus_1'),
+            verb: 'get',
+            path: '/v1/customers/cus_1/financial-summary',
+        },
     ],
 
     plans: [
@@ -145,6 +155,13 @@ const cases: Record<string, MethodCase[]> = {
             body: [{ metric_id: 'bm_1', charge_model: 'per_unit', amounts: { INR: { unit_amount: '0.0035' } } }],
         },
         { method: 'getCharges', call: (r) => r.plans.getCharges('plan_1'), verb: 'get', path: '/v1/plans/plan_1/charges' },
+        {
+            method: 'simulateCharges',
+            call: (r) => r.plans.simulateCharges('plan_1', { currency: 'USD', usage: [{ metric_id: 'bm_1', quantity: 100 }] }),
+            verb: 'post',
+            path: '/v1/plans/plan_1/simulate-charges',
+            body: { currency: 'USD', usage: [{ metric_id: 'bm_1', quantity: 100 }] },
+        },
     ],
 
     subscriptions: [
@@ -214,6 +231,47 @@ const cases: Record<string, MethodCase[]> = {
             verb: 'put',
             path: '/v1/subscriptions/sub_1/commitment',
             body: { amount: 5000000 },
+        },
+        {
+            method: 'addAddon',
+            call: (r) => r.subscriptions.addAddon('sub_1', { plan_id: 'plan_9', quantity: 2 }),
+            verb: 'post',
+            path: '/v1/subscriptions/sub_1/addons',
+            body: { plan_id: 'plan_9', quantity: 2 },
+        },
+        { method: 'addons', call: (r) => r.subscriptions.addons('sub_1'), verb: 'get', path: '/v1/subscriptions/sub_1/addons' },
+        {
+            method: 'removeAddon',
+            call: (r) => r.subscriptions.removeAddon('sub_1', 'addon_1'),
+            verb: 'delete',
+            path: '/v1/subscriptions/sub_1/addons/addon_1',
+        },
+        {
+            method: 'billUsageNow',
+            call: (r) => r.subscriptions.billUsageNow('sub_1'),
+            verb: 'post',
+            path: '/v1/subscriptions/sub_1/bill-usage',
+        },
+        {
+            method: 'cancelPreview',
+            call: (r) => r.subscriptions.cancelPreview('sub_1', { immediately: true }),
+            verb: 'get',
+            path: '/v1/subscriptions/sub_1/cancel-preview',
+            params: { immediately: true },
+        },
+        { method: 'consent', call: (r) => r.subscriptions.consent('sub_1'), verb: 'get', path: '/v1/subscriptions/sub_1/consent' },
+        {
+            method: 'financialSummary',
+            call: (r) => r.subscriptions.financialSummary('sub_1'),
+            verb: 'get',
+            path: '/v1/subscriptions/sub_1/financial-summary',
+        },
+        { method: 'history', call: (r) => r.subscriptions.history('sub_1'), verb: 'get', path: '/v1/subscriptions/sub_1/history' },
+        {
+            method: 'cancellationReasons',
+            call: (r) => r.subscriptions.cancellationReasons(),
+            verb: 'get',
+            path: '/v1/cancellation-reasons',
         },
     ],
 
@@ -308,6 +366,46 @@ const cases: Record<string, MethodCase[]> = {
             verb: 'post',
             path: '/v1/invoices/inv_1/einvoice/cancel',
             body: { reason: 'data entry error' },
+        },
+        { method: 'pdf', call: (r) => r.invoices.pdf('inv_1'), verb: 'get', path: '/v1/invoices/inv_1/pdf', responseType: 'text' },
+        {
+            method: 'previewHtml',
+            call: (r) => r.invoices.previewHtml('inv_1'),
+            verb: 'get',
+            path: '/v1/invoices/inv_1/preview',
+            responseType: 'text',
+        },
+        { method: 'send', call: (r) => r.invoices.send('inv_1'), verb: 'post', path: '/v1/invoices/inv_1/send' },
+        {
+            method: 'euEInvoiceStatus',
+            call: (r) => r.invoices.euEInvoiceStatus('inv_1'),
+            verb: 'get',
+            path: '/v1/invoices/inv_1/eu-einvoice',
+        },
+        {
+            method: 'retryEUEInvoice',
+            call: (r) => r.invoices.retryEUEInvoice('inv_1'),
+            verb: 'post',
+            path: '/v1/invoices/inv_1/eu-einvoice/retry',
+        },
+        {
+            method: 'journalEntries',
+            call: (r) => r.invoices.journalEntries('inv_1'),
+            verb: 'get',
+            path: '/v1/invoices/inv_1/journal-entries',
+        },
+        {
+            method: 'paymentAttempts',
+            call: (r) => r.invoices.paymentAttempts('inv_1'),
+            verb: 'get',
+            path: '/v1/invoices/inv_1/payment-attempts',
+        },
+        { method: 'paymentWall', call: (r) => r.invoices.paymentWall('inv_1'), verb: 'get', path: '/v1/invoices/inv_1/payment-wall' },
+        {
+            method: 'statusHistory',
+            call: (r) => r.invoices.statusHistory('inv_1'),
+            verb: 'get',
+            path: '/v1/invoices/inv_1/status-history',
         },
     ],
 
@@ -426,12 +524,23 @@ const cases: Record<string, MethodCase[]> = {
             body: { name: 'API calls v2', code: 'api_calls', aggregation_type: 'max' },
         },
         { method: 'delete', call: (r) => r.billableMetrics.delete('bm_1'), verb: 'delete', path: '/v1/billable-metrics/bm_1' },
+        { method: 'charges', call: (r) => r.billableMetrics.charges('bm_1'), verb: 'get', path: '/v1/billable-metrics/bm_1/charges' },
     ],
 
     creditNotes: [
         { method: 'create', call: (r) => r.creditNotes.create(body), verb: 'post', path: '/v1/credit-notes', body },
         { method: 'list', call: (r) => r.creditNotes.list(listParams), verb: 'get', path: '/v1/credit-notes', params: listParams },
         { method: 'get', call: (r) => r.creditNotes.get('cn_1'), verb: 'get', path: '/v1/credit-notes/cn_1' },
+        { method: 'approve', call: (r) => r.creditNotes.approve('cn_1'), verb: 'post', path: '/v1/credit-notes/cn_1/approve' },
+        { method: 'reject', call: (r) => r.creditNotes.reject('cn_1'), verb: 'post', path: '/v1/credit-notes/cn_1/reject' },
+        { method: 'void', call: (r) => r.creditNotes.void('cn_1'), verb: 'post', path: '/v1/credit-notes/cn_1/void' },
+        {
+            method: 'journalEntries',
+            call: (r) => r.creditNotes.journalEntries('cn_1'),
+            verb: 'get',
+            path: '/v1/credit-notes/cn_1/journal-entries',
+        },
+        { method: 'pdf', call: (r) => r.creditNotes.pdf('cn_1'), verb: 'get', path: '/v1/credit-notes/cn_1/pdf', responseType: 'text' },
     ],
 
     quotes: [
@@ -489,6 +598,7 @@ const cases: Record<string, MethodCase[]> = {
     disputes: [
         { method: 'list', call: (r) => r.disputes.list(listParams), verb: 'get', path: '/v1/disputes', params: listParams },
         { method: 'resolve', call: (r) => r.disputes.resolve('dsp_1', body), verb: 'post', path: '/v1/disputes/dsp_1/resolve', body },
+        { method: 'get', call: (r) => r.disputes.get('dsp_1'), verb: 'get', path: '/v1/disputes/dsp_1' },
     ],
 
     mandates: [
@@ -578,6 +688,39 @@ const cases: Record<string, MethodCase[]> = {
             params: { entity_id: 'ent_1' },
         },
         { method: 'dunningTiming', call: (r) => r.analytics.dunningTiming(), verb: 'get', path: '/v1/analytics/dunning/timing' },
+        {
+            method: 'dunningHistory',
+            call: (r) => r.analytics.dunningHistory({ limit: 20 }),
+            verb: 'get',
+            path: '/v1/analytics/dunning/history',
+            params: { limit: 20 },
+        },
+        { method: 'dunningOverview', call: (r) => r.analytics.dunningOverview(), verb: 'get', path: '/v1/analytics/dunning/overview' },
+        { method: 'dunningRecovered', call: (r) => r.analytics.dunningRecovered(), verb: 'get', path: '/v1/analytics/dunning/recovered' },
+        { method: 'dunningWeights', call: (r) => r.analytics.dunningWeights(), verb: 'get', path: '/v1/analytics/dunning/weights' },
+        {
+            method: 'mrrWaterfall',
+            call: (r) => r.analytics.mrrWaterfall({ start: '2026-07-01', end: '2026-08-01' }),
+            verb: 'get',
+            path: '/v1/analytics/mrr/waterfall',
+            params: { start: '2026-07-01', end: '2026-08-01' },
+        },
+        {
+            method: 'revenueByGeography',
+            call: (r) => r.analytics.revenueByGeography(),
+            verb: 'get',
+            path: '/v1/analytics/revenue-by-geography',
+        },
+        { method: 'revenueByPlan', call: (r) => r.analytics.revenueByPlan(), verb: 'get', path: '/v1/analytics/revenue-by-plan' },
+        { method: 'unitEconomics', call: (r) => r.analytics.unitEconomics(), verb: 'get', path: '/v1/analytics/unit-economics' },
+        { method: 'usage', call: (r) => r.analytics.usage(), verb: 'get', path: '/v1/analytics/usage' },
+        {
+            method: 'ask',
+            call: (r) => r.analytics.ask({ question: 'What was MRR growth last quarter?' }),
+            verb: 'post',
+            path: '/v1/analytics/ask',
+            body: { question: 'What was MRR growth last quarter?' },
+        },
     ],
 
     ledger: [
@@ -588,6 +731,29 @@ const cases: Record<string, MethodCase[]> = {
             verb: 'get',
             path: '/v1/ledger/entries',
             params: { account_id: 'acct_1' },
+        },
+        { method: 'transaction', call: (r) => r.ledger.transaction('lt_1'), verb: 'get', path: '/v1/ledger/transactions/lt_1' },
+        {
+            method: 'trialBalance',
+            call: (r) => r.ledger.trialBalance({ consolidated: true }),
+            verb: 'get',
+            path: '/v1/ledger/trial-balance',
+            params: { consolidated: true },
+        },
+        {
+            method: 'deferredRollforward',
+            call: (r) => r.ledger.deferredRollforward({ month: 7, year: 2026 }),
+            verb: 'get',
+            path: '/v1/ledger/deferred-rollforward',
+            params: { month: 7, year: 2026 },
+        },
+        {
+            method: 'export',
+            call: (r) => r.ledger.export({ month: 7, year: 2026 }),
+            verb: 'get',
+            path: '/v1/ledger/export',
+            params: { month: 7, year: 2026 },
+            responseType: 'text',
         },
     ],
 
@@ -649,6 +815,14 @@ const cases: Record<string, MethodCase[]> = {
         },
         { method: 'sync', call: (r) => r.accounting.sync(), verb: 'post', path: '/v1/accounting/sync' },
         { method: 'syncStatus', call: (r) => r.accounting.syncStatus(), verb: 'get', path: '/v1/accounting/sync/status' },
+        { method: 'connect', call: (r) => r.accounting.connect('quickbooks'), verb: 'post', path: '/v1/accounting/connect/quickbooks' },
+        {
+            method: 'oauthCallback',
+            call: (r) => r.accounting.oauthCallback('quickbooks', { code: 'c', state: 's', realmId: '42' }),
+            verb: 'get',
+            path: '/v1/accounting/callback/quickbooks',
+            params: { code: 'c', state: 's', realmId: '42' },
+        },
     ],
 
     virtualAccounts: [
@@ -853,6 +1027,336 @@ const cases: Record<string, MethodCase[]> = {
         { method: 'delete', call: (r) => r.entities.delete('ent_1'), verb: 'delete', path: '/v1/entities/ent_1' },
         { method: 'overview', call: (r) => r.entities.overview(), verb: 'get', path: '/v1/analytics/entities-overview' },
     ],
+
+    paymentAttempts: [
+        {
+            method: 'list',
+            call: (r) => r.paymentAttempts.list({ status: 'failed', page: 2, per_page: 25 }),
+            verb: 'get',
+            path: '/v1/payment-attempts',
+            params: { status: 'failed', page: 2, per_page: 25 },
+        },
+        { method: 'get', call: (r) => r.paymentAttempts.get('pa_1'), verb: 'get', path: '/v1/payment-attempts/pa_1' },
+    ],
+
+    payments: [
+        {
+            method: 'createOrder',
+            call: (r) => r.payments.createOrder({ invoice_id: 'inv_1' }),
+            verb: 'post',
+            path: '/payments/order',
+            body: { invoice_id: 'inv_1' },
+        },
+    ],
+
+    finance: [
+        {
+            method: 'closePack',
+            call: (r) => r.finance.closePack({ month: 7, year: 2026 }),
+            verb: 'get',
+            path: '/v1/finance/close-pack',
+            params: { month: 7, year: 2026 },
+        },
+        { method: 'reconciliation', call: (r) => r.finance.reconciliation(), verb: 'get', path: '/v1/finance/reconciliation' },
+        {
+            method: 'recordReconciliation',
+            call: (r) => r.finance.recordReconciliation(),
+            verb: 'post',
+            path: '/v1/finance/reconciliation/runs',
+        },
+        {
+            method: 'reconciliationRuns',
+            call: (r) => r.finance.reconciliationRuns({ limit: 10 }),
+            verb: 'get',
+            path: '/v1/finance/reconciliation/runs',
+            params: { limit: 10 },
+        },
+        {
+            method: 'reconciliationRun',
+            call: (r) => r.finance.reconciliationRun('run_1'),
+            verb: 'get',
+            path: '/v1/finance/reconciliation/runs/run_1',
+        },
+        {
+            method: 'revRecReport',
+            call: (r) => r.finance.revRecReport({ month: 7, year: 2026 }),
+            verb: 'get',
+            path: '/v1/finance/revrec/report',
+            params: { month: 7, year: 2026 },
+        },
+        { method: 'revenueWaterfall', call: (r) => r.finance.revenueWaterfall(), verb: 'get', path: '/v1/finance/revrec/waterfall' },
+    ],
+
+    india: [
+        {
+            method: 'gstr1',
+            call: (r) => r.india.gstr1({ month: 7, year: 2026 }),
+            verb: 'get',
+            path: '/v1/india/gstr1',
+            params: { month: 7, year: 2026 },
+        },
+        {
+            method: 'gstr3b',
+            call: (r) => r.india.gstr3b({ month: 7, year: 2026, entity_id: 'ent_1' }),
+            verb: 'get',
+            path: '/v1/india/gstr3b',
+            params: { month: 7, year: 2026, entity_id: 'ent_1' },
+        },
+    ],
+
+    consents: [
+        {
+            method: 'record',
+            call: (r) => r.consents.record({ customer_id: 'cus_1', consent_type: 'recurring_billing', granted: true }),
+            verb: 'post',
+            path: '/v1/consents',
+            body: { customer_id: 'cus_1', consent_type: 'recurring_billing', granted: true },
+        },
+        {
+            method: 'revoke',
+            call: (r) => r.consents.revoke('cons_1'),
+            verb: 'post',
+            path: '/v1/consents/revoke',
+            body: { consent_id: 'cons_1' },
+        },
+    ],
+
+    settings: [
+        { method: 'getEUEInvoice', call: (r) => r.settings.getEUEInvoice(), verb: 'get', path: '/v1/settings/eu-einvoice' },
+        { method: 'updateEUEInvoice', call: (r) => r.settings.updateEUEInvoice(body), verb: 'put', path: '/v1/settings/eu-einvoice', body },
+        { method: 'getGST', call: (r) => r.settings.getGST(), verb: 'get', path: '/v1/settings/gst' },
+        { method: 'updateGST', call: (r) => r.settings.updateGST(body), verb: 'put', path: '/v1/settings/gst', body },
+        {
+            method: 'validateGSTIN',
+            call: (r) => r.settings.validateGSTIN('27AAPFU0939F1ZV'),
+            verb: 'post',
+            path: '/v1/settings/gst/validate',
+            body: { gstin: '27AAPFU0939F1ZV' },
+        },
+        { method: 'getInvoiceBranding', call: (r) => r.settings.getInvoiceBranding(), verb: 'get', path: '/v1/settings/invoice-branding' },
+        {
+            method: 'updateInvoiceBranding',
+            call: (r) => r.settings.updateInvoiceBranding(body),
+            verb: 'put',
+            path: '/v1/settings/invoice-branding',
+            body,
+        },
+        { method: 'getIRP', call: (r) => r.settings.getIRP(), verb: 'get', path: '/v1/settings/irp' },
+        { method: 'updateIRP', call: (r) => r.settings.updateIRP(body), verb: 'put', path: '/v1/settings/irp', body },
+        { method: 'testIRP', call: (r) => r.settings.testIRP(), verb: 'post', path: '/v1/settings/irp/test' },
+        { method: 'getMCP', call: (r) => r.settings.getMCP(), verb: 'get', path: '/v1/settings/mcp' },
+        {
+            method: 'updateMCP',
+            call: (r) => r.settings.updateMCP({ tier3_enabled: true }),
+            verb: 'put',
+            path: '/v1/settings/mcp',
+            body: { tier3_enabled: true },
+        },
+        {
+            method: 'taxLiability',
+            call: (r) => r.settings.taxLiability({ year: 2026 }),
+            verb: 'get',
+            path: '/v1/settings/tax/liability',
+            params: { year: 2026 },
+        },
+        {
+            method: 'getTaxNexus',
+            call: (r) => r.settings.getTaxNexus({ entity_id: 'ent_1' }),
+            verb: 'get',
+            path: '/v1/settings/tax/nexus',
+            params: { entity_id: 'ent_1' },
+        },
+        {
+            method: 'setTaxNexus',
+            call: (r) => r.settings.setTaxNexus({ states: [{ state_code: 'CA', nexus_type: 'physical' }] }),
+            verb: 'put',
+            path: '/v1/settings/tax/nexus',
+            body: { states: [{ state_code: 'CA', nexus_type: 'physical' }] },
+        },
+        {
+            method: 'taxNexusStatus',
+            call: (r) => r.settings.taxNexusStatus({ year: 2026 }),
+            verb: 'get',
+            path: '/v1/settings/tax/nexus/status',
+            params: { year: 2026 },
+        },
+        { method: 'getTaxRegistrations', call: (r) => r.settings.getTaxRegistrations(), verb: 'get', path: '/v1/settings/tax/registrations' },
+        {
+            method: 'setTaxRegistrations',
+            call: (r) => r.settings.setTaxRegistrations({ registrations: [{ state_code: 'CA', status: 'registered' }] }),
+            verb: 'put',
+            path: '/v1/settings/tax/registrations',
+            body: { registrations: [{ state_code: 'CA', status: 'registered' }] },
+        },
+        { method: 'getUSTax', call: (r) => r.settings.getUSTax(), verb: 'get', path: '/v1/settings/tax/us' },
+        { method: 'updateUSTax', call: (r) => r.settings.updateUSTax(body), verb: 'put', path: '/v1/settings/tax/us', body },
+    ],
+
+    users: [
+        { method: 'list', call: (r) => r.users.list(), verb: 'get', path: '/v1/users' },
+        {
+            method: 'create',
+            call: (r) => r.users.create({ email: 'a@b.co', name: 'A', role: 'member', password: 'hunter2hunter2' }),
+            verb: 'post',
+            path: '/v1/users',
+            body: { email: 'a@b.co', name: 'A', role: 'member', password: 'hunter2hunter2' },
+        },
+        {
+            method: 'invite',
+            call: (r) => r.users.invite({ email: 'a@b.co', name: 'A', role: 'admin' }),
+            verb: 'post',
+            path: '/v1/users/invite',
+            body: { email: 'a@b.co', name: 'A', role: 'admin' },
+        },
+        {
+            method: 'updateRole',
+            call: (r) => r.users.updateRole('usr_1', 'admin'),
+            verb: 'patch',
+            path: '/v1/users/usr_1',
+            body: { role: 'admin' },
+        },
+        { method: 'delete', call: (r) => r.users.delete('usr_1'), verb: 'delete', path: '/v1/users/usr_1' },
+    ],
+
+    apiKeys: [
+        { method: 'list', call: (r) => r.apiKeys.list(), verb: 'get', path: '/v1/developer/keys' },
+        {
+            method: 'create',
+            call: (r) => r.apiKeys.create({ name: 'ci', mode: 'test' }),
+            verb: 'post',
+            path: '/v1/developer/keys',
+            body: { name: 'ci', mode: 'test' },
+        },
+        { method: 'revoke', call: (r) => r.apiKeys.revoke('key_1'), verb: 'delete', path: '/v1/developer/keys/key_1' },
+    ],
+
+    auth: [
+        { method: 'mfaSetup', call: (r) => r.auth.mfaSetup(), verb: 'post', path: '/v1/auth/mfa/setup' },
+        { method: 'mfaVerify', call: (r) => r.auth.mfaVerify('123456'), verb: 'post', path: '/v1/auth/mfa/verify', body: { code: '123456' } },
+        { method: 'mfaDisable', call: (r) => r.auth.mfaDisable('123456'), verb: 'post', path: '/v1/auth/mfa/disable', body: { code: '123456' } },
+        { method: 'sessions', call: (r) => r.auth.sessions(), verb: 'get', path: '/v1/auth/sessions' },
+        { method: 'revokeOtherSessions', call: (r) => r.auth.revokeOtherSessions(), verb: 'delete', path: '/v1/auth/sessions' },
+        { method: 'revokeSession', call: (r) => r.auth.revokeSession('sess_1'), verb: 'delete', path: '/v1/auth/sessions/sess_1' },
+    ],
+
+    sso: [
+        { method: 'get', call: (r) => r.sso.get(), verb: 'get', path: '/v1/sso/connection' },
+        { method: 'upsert', call: (r) => r.sso.upsert(body), verb: 'put', path: '/v1/sso/connection', body },
+        { method: 'delete', call: (r) => r.sso.delete(), verb: 'delete', path: '/v1/sso/connection' },
+    ],
+
+    gatewayConnections: [
+        { method: 'list', call: (r) => r.gatewayConnections.list(), verb: 'get', path: '/v1/gateway-connections' },
+        {
+            method: 'create',
+            call: (r) => r.gatewayConnections.create({ provider: 'stripe', mode: 'test', secret_key: 'sk_test_1' }),
+            verb: 'post',
+            path: '/v1/gateway-connections',
+            body: { provider: 'stripe', mode: 'test', secret_key: 'sk_test_1' },
+        },
+        { method: 'delete', call: (r) => r.gatewayConnections.delete('stripe'), verb: 'delete', path: '/v1/gateway-connections/stripe' },
+        {
+            method: 'setWebhookSecret',
+            call: (r) => r.gatewayConnections.setWebhookSecret('razorpay', 'whsec_1'),
+            verb: 'put',
+            path: '/v1/gateway-connections/razorpay/webhook-secret',
+            body: { webhook_secret: 'whsec_1' },
+        },
+    ],
+
+    integrationConnections: [
+        { method: 'list', call: (r) => r.integrationConnections.list(), verb: 'get', path: '/v1/integration-connections' },
+        {
+            method: 'create',
+            call: (r) => r.integrationConnections.create({ category: 'tax', provider: 'taxjar', config: { api_key: 'k' } }),
+            verb: 'post',
+            path: '/v1/integration-connections',
+            body: { category: 'tax', provider: 'taxjar', config: { api_key: 'k' } },
+        },
+        {
+            method: 'delete',
+            call: (r) => r.integrationConnections.delete('crm', 'hubspot'),
+            verb: 'delete',
+            path: '/v1/integration-connections/crm/hubspot',
+        },
+    ],
+
+    crm: [{ method: 'sync', call: (r) => r.crm.sync(), verb: 'post', path: '/v1/crm/sync' }],
+
+    migration: [
+        { method: 'previewStripe', call: (r) => r.migration.previewStripe(body), verb: 'post', path: '/v1/import/stripe/preview', body },
+        { method: 'compareStripe', call: (r) => r.migration.compareStripe(body), verb: 'post', path: '/v1/import/stripe/compare', body },
+        { method: 'commitStripe', call: (r) => r.migration.commitStripe(body), verb: 'post', path: '/v1/import/stripe/commit', body },
+        {
+            method: 'previewChargebee',
+            call: (r) => r.migration.previewChargebee(body),
+            verb: 'post',
+            path: '/v1/import/chargebee/preview',
+            body,
+        },
+        {
+            method: 'compareChargebee',
+            call: (r) => r.migration.compareChargebee(body),
+            verb: 'post',
+            path: '/v1/import/chargebee/compare',
+            body,
+        },
+        { method: 'commitChargebee', call: (r) => r.migration.commitChargebee(body), verb: 'post', path: '/v1/import/chargebee/commit', body },
+        {
+            method: 'previewRevenueCat',
+            call: (r) => r.migration.previewRevenueCat(body),
+            verb: 'post',
+            path: '/v1/import/revenuecat/preview',
+            body,
+        },
+        {
+            method: 'compareRevenueCat',
+            call: (r) => r.migration.compareRevenueCat(body),
+            verb: 'post',
+            path: '/v1/import/revenuecat/compare',
+            body,
+        },
+        {
+            method: 'commitRevenueCat',
+            call: (r) => r.migration.commitRevenueCat(body),
+            verb: 'post',
+            path: '/v1/import/revenuecat/commit',
+            body,
+        },
+        {
+            method: 'compareReports',
+            call: (r) => r.migration.compareReports({ limit: 5 }),
+            verb: 'get',
+            path: '/v1/import/compare-reports',
+            params: { limit: 5 },
+        },
+        { method: 'compareReport', call: (r) => r.migration.compareReport('cr_1'), verb: 'get', path: '/v1/import/compare-reports/cr_1' },
+        {
+            method: 'compareReportDocument',
+            call: (r) => r.migration.compareReportDocument('cr_1'),
+            verb: 'get',
+            path: '/v1/import/compare-reports/cr_1/document',
+            responseType: 'text',
+        },
+    ],
+
+    billing: [
+        { method: 'plans', call: (r) => r.billing.plans(), verb: 'get', path: '/v1/billing/plans' },
+        { method: 'status', call: (r) => r.billing.status(), verb: 'get', path: '/v1/billing/status' },
+    ],
+
+    system: [
+        { method: 'version', call: (r) => r.system.version(), verb: 'get', path: '/version' },
+        { method: 'metrics', call: (r) => r.system.metrics(), verb: 'get', path: '/metrics', responseType: 'text' },
+        { method: 'platformMetrics', call: (r) => r.system.platformMetrics(), verb: 'get', path: '/platform/metrics' },
+        {
+            method: 'joinWaitlist',
+            call: (r) => r.system.joinWaitlist({ email: 'founder@example.com', company: 'Acme' }),
+            verb: 'post',
+            path: '/waitlist',
+            body: { email: 'founder@example.com', company: 'Acme' },
+        },
+    ],
 };
 
 describe('Recurso constructor', () => {
@@ -888,13 +1392,14 @@ for (const [resource, methods] of Object.entries(cases)) {
                 // Only the expected verb fired, exactly once.
                 const fn = mocks.client[c.verb];
                 expect(fn).toHaveBeenCalledTimes(1);
-                for (const other of ['get', 'post', 'put', 'delete'] as const) {
+                for (const other of VERBS) {
                     if (other !== c.verb) expect(mocks.client[other]).not.toHaveBeenCalled();
                 }
 
                 // Verb-specific argument shape.
                 if (c.verb === 'get') {
-                    expect(fn).toHaveBeenCalledWith(c.path, { params: c.params });
+                    const config = c.responseType ? { params: c.params, responseType: c.responseType } : { params: c.params };
+                    expect(fn).toHaveBeenCalledWith(c.path, config);
                 } else if (c.verb === 'delete') {
                     expect(fn).toHaveBeenCalledWith(c.path);
                 } else {
@@ -925,6 +1430,20 @@ describe('list params passthrough', () => {
         const eventParams = { type: 'invoice.paid', limit: 5 };
         await recurso.events.list(eventParams);
         expect(mocks.client.get).toHaveBeenCalledWith('/v1/events', { params: eventParams });
+    });
+
+    it('accepts the scoped filters (customer_id, subscription_id, object_id)', async () => {
+        const subParams = { customer_id: 'cus_1', status: 'active' };
+        await recurso.subscriptions.list(subParams);
+        expect(mocks.client.get).toHaveBeenCalledWith('/v1/subscriptions', { params: subParams });
+
+        const invoiceParams = { customer_id: 'cus_1', subscription_id: 'sub_1', limit: 100 };
+        await recurso.invoices.list(invoiceParams);
+        expect(mocks.client.get).toHaveBeenCalledWith('/v1/invoices', { params: invoiceParams });
+
+        const timeline = { object_id: 'inv_1' };
+        await recurso.events.list(timeline);
+        expect(mocks.client.get).toHaveBeenCalledWith('/v1/events', { params: timeline });
     });
 
     it('sends undefined params when a list method is called without arguments', async () => {
@@ -985,7 +1504,7 @@ describe('invoices.pdfUrl', () => {
     it('builds the public PDF URL from the client baseURL without an HTTP call', () => {
         const url = recurso.invoices.pdfUrl('inv_42');
         expect(url).toBe(`${BASE_URL}/v1/invoices/inv_42/pdf`);
-        for (const verb of ['get', 'post', 'put', 'delete'] as const) {
+        for (const verb of VERBS) {
             expect(mocks.client[verb]).not.toHaveBeenCalled();
         }
     });
