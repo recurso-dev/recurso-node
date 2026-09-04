@@ -2174,7 +2174,7 @@ export interface paths {
         };
         /**
          * Verify a magic link and start a session
-         * @description Exchanges the emailed token for a 7-day portal session. The session token is also set as the `portal_session` cookie.
+         * @description Exchanges the emailed token for a 7-day portal session. The session token is delivered only as the httpOnly `portal_session` cookie — it is never in the JSON body.
          */
         get: operations["verifyPortalMagicLink"];
         put?: never;
@@ -5600,14 +5600,18 @@ export interface components {
             error: {
                 /**
                  * @description Stable machine-readable error code.
-                 * @example BAD_REQUEST
-                 * @example UNAUTHORIZED
-                 * @example NOT_FOUND
-                 * @example CONFLICT
-                 * @example VALIDATION_ERROR
-                 * @example INVALID_API_KEY
-                 * @example RATE_LIMITED
-                 * @example INTERNAL_ERROR
+                 * @example validation_failed
+                 * @example unauthorized
+                 * @example forbidden
+                 * @example not_found
+                 * @example conflict
+                 * @example rate_limited
+                 * @example internal_error
+                 * @example invalid_api_key
+                 * @example key_mode_mismatch
+                 * @example over_refund
+                 * @example invoice_not_paid
+                 * @example invoice_already_paid
                  */
                 code: string;
                 /** @description Human-readable explanation. */
@@ -7736,7 +7740,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Plan"];
+                    "application/json": {
+                        data?: components["schemas"]["Plan"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -7797,7 +7803,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Plan"];
+                    "application/json": {
+                        data?: components["schemas"]["Plan"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -8515,7 +8523,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Customer"];
+                    "application/json": {
+                        data?: components["schemas"]["Customer"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -8616,7 +8626,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Subscription"];
+                    "application/json": {
+                        data?: components["schemas"]["Subscription"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -8798,7 +8810,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Subscription"];
+                    "application/json": {
+                        data?: components["schemas"]["Subscription"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -8872,7 +8886,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlanChangePreview"];
+                    "application/json": {
+                        data?: components["schemas"]["PlanChangePreview"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -8901,7 +8917,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CancelSubscriptionResponse"];
+                    "application/json": {
+                        data?: components["schemas"]["CancelSubscriptionResponse"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -9056,7 +9074,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UnbilledCharge"];
+                    "application/json": {
+                        data?: components["schemas"]["UnbilledCharge"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -9079,7 +9099,12 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        /** @description Always null — there was no unbilled usage to invoice. */
+                        data?: null;
+                    };
+                };
             };
             /** @description Interim invoice created. */
             201: {
@@ -9087,7 +9112,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Invoice"];
+                    "application/json": {
+                        data?: components["schemas"]["Invoice"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -9117,7 +9144,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Invoice"];
+                    "application/json": {
+                        data?: components["schemas"]["Invoice"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -9178,7 +9207,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SubscriptionAddon"];
+                    "application/json": {
+                        data?: components["schemas"]["SubscriptionAddon"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -9908,7 +9939,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Coupon"];
+                    "application/json": {
+                        data?: components["schemas"]["Coupon"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -9934,7 +9967,27 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            id?: string;
+                            /** Format: uuid */
+                            subscription_id?: string;
+                            /** Format: uuid */
+                            customer_id?: string;
+                            dimension?: string;
+                            /** Format: int64 */
+                            quantity?: number;
+                            /** Format: date-time */
+                            timestamp?: string;
+                            properties?: {
+                                [key: string]: string;
+                            };
+                            transaction_id?: string;
+                        }[];
+                    };
+                };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
@@ -10577,7 +10630,12 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        /** @enum {string} */
+                        status?: "active" | "inactive";
+                    };
+                };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
@@ -10776,7 +10834,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MRRMetrics"];
+                    "application/json": {
+                        data?: components["schemas"]["MRRMetrics"];
+                    };
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -11153,12 +11213,14 @@ export interface operations {
         };
         responses: {
             /** @description Gateway order. */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaymentOrder"];
+                    "application/json": {
+                        data?: components["schemas"]["PaymentOrder"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -11481,7 +11543,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Session created. */
+            /** @description Session created (cookie set). */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -11489,7 +11551,6 @@ export interface operations {
                 content: {
                     "application/json": {
                         message?: string;
-                        session_token?: string;
                     };
                 };
             };
@@ -12061,7 +12122,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DunningOverview"];
+                    "application/json": {
+                        data?: components["schemas"]["DunningOverview"];
+                    };
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -12132,7 +12195,14 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** @constant */
+                            status?: "requeued";
+                        };
+                    };
+                };
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
@@ -12161,7 +12231,13 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        data?: {
+                            dunning_paused?: boolean;
+                        };
+                    };
+                };
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
@@ -12183,7 +12259,14 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** @constant */
+                            status?: "uncollectible";
+                        };
+                    };
+                };
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
@@ -12345,7 +12428,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["APIKey"];
+                    "application/json": {
+                        data?: components["schemas"]["APIKey"];
+                    };
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -12555,8 +12640,13 @@ export interface operations {
                 account_id: string;
                 /** @description Filter to one posting code (e.g. 3 = payment). Omit for all. */
                 code?: number;
-                /** @description Page size (default 50, max 250). */
+                /** @description 1-based page number (default 1). Ignored when `offset` is given. */
+                page?: number;
+                /** @description Page size (default 50, max 250). Alias of `limit`. */
+                per_page?: number;
+                /** @description Page size (default 50, max 250). Same as `per_page`; when both are sent `limit` wins. */
                 limit?: number;
+                /** @description Row offset (default 0). Overrides the offset computed from `page`. */
                 offset?: number;
             };
             header?: never;
@@ -13787,7 +13877,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Consent"];
+                    "application/json": {
+                        data?: components["schemas"]["Consent"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -13870,7 +13962,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Consent"];
+                    "application/json": {
+                        data?: components["schemas"]["Consent"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -14131,7 +14225,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Subscription"];
+                    "application/json": {
+                        data?: components["schemas"]["Subscription"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -14233,12 +14329,14 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        mandate?: components["schemas"]["Mandate"];
-                        /**
-                         * Format: uri
-                         * @description URL where the customer authorizes the mandate.
-                         */
-                        auth_url?: string;
+                        data?: {
+                            mandate?: components["schemas"]["Mandate"];
+                            /**
+                             * Format: uri
+                             * @description URL where the customer authorizes the mandate.
+                             */
+                            auth_url?: string;
+                        };
                     };
                 };
             };
@@ -14357,7 +14455,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VirtualAccount"];
+                    "application/json": {
+                        data?: components["schemas"]["VirtualAccount"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -14434,7 +14534,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["OfflinePayment"];
+                    "application/json": {
+                        data?: components["schemas"]["OfflinePayment"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -14487,7 +14589,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Organization"];
+                    "application/json": {
+                        data?: components["schemas"]["Organization"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -14772,14 +14876,22 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["AccountingConnection"];
+                    };
+                };
             };
             /** @description Connection created. */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["AccountingConnection"];
+                    };
+                };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
@@ -15034,7 +15146,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CancelFlow"][];
+                    "application/json": {
+                        data?: components["schemas"]["CancelFlow"][];
+                    };
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -15067,7 +15181,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CancelFlow"];
+                    "application/json": {
+                        data?: components["schemas"]["CancelFlow"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15091,7 +15207,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CancelFlow"];
+                    "application/json": {
+                        data?: components["schemas"]["CancelFlow"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15125,7 +15243,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CancelFlow"];
+                    "application/json": {
+                        data?: components["schemas"]["CancelFlow"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15159,7 +15279,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CancelFlowStep"];
+                    "application/json": {
+                        data?: components["schemas"]["CancelFlowStep"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15191,7 +15313,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CancelFlowStep"];
+                    "application/json": {
+                        data?: components["schemas"]["CancelFlowStep"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15249,7 +15373,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["StartSessionResult"];
+                    "application/json": {
+                        data?: components["schemas"]["StartSessionResult"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15273,7 +15399,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CancelFlowSession"];
+                    "application/json": {
+                        data?: components["schemas"]["CancelFlowSession"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15306,7 +15434,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SubmitStepResult"];
+                    "application/json": {
+                        data?: components["schemas"]["SubmitStepResult"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15330,7 +15460,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FlowStats"];
+                    "application/json": {
+                        data?: components["schemas"]["FlowStats"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15352,7 +15484,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DunningCampaign"][];
+                    "application/json": {
+                        data?: components["schemas"]["DunningCampaign"][];
+                    };
                 };
             };
             401: components["responses"]["Unauthorized"];
@@ -15384,7 +15518,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DunningCampaign"];
+                    "application/json": {
+                        data?: components["schemas"]["DunningCampaign"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15408,7 +15544,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DunningCampaign"];
+                    "application/json": {
+                        data?: components["schemas"]["DunningCampaign"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15441,7 +15579,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DunningCampaign"];
+                    "application/json": {
+                        data?: components["schemas"]["DunningCampaign"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15480,7 +15620,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DunningCampaignStep"];
+                    "application/json": {
+                        data?: components["schemas"]["DunningCampaignStep"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15517,7 +15659,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DunningCampaignStep"];
+                    "application/json": {
+                        data?: components["schemas"]["DunningCampaignStep"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -15569,9 +15713,11 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        /** Format: uuid */
-                        invoice_id?: string;
-                        payment_wall_active?: boolean;
+                        data?: {
+                            /** Format: uuid */
+                            invoice_id?: string;
+                            payment_wall_active?: boolean;
+                        };
                     };
                 };
             };
@@ -15595,20 +15741,22 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        /** @description Total recovered, in minor units, keyed by currency. */
-                        recovered_amount_total?: {
-                            [key: string]: number;
+                        data?: {
+                            /** @description Total recovered, in minor units, keyed by currency. */
+                            recovered_amount_total?: {
+                                [key: string]: number;
+                            };
+                            recovered_count?: number;
+                            avg_attempts?: number;
+                            avg_days_to_recover?: number;
+                            monthly?: {
+                                month?: string;
+                                currency?: string;
+                                /** Format: int64 */
+                                amount?: number;
+                                count?: number;
+                            }[];
                         };
-                        recovered_count?: number;
-                        avg_attempts?: number;
-                        avg_days_to_recover?: number;
-                        monthly?: {
-                            month?: string;
-                            currency?: string;
-                            /** Format: int64 */
-                            amount?: number;
-                            count?: number;
-                        }[];
                     };
                 };
             };
@@ -16591,10 +16739,12 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        feature_key?: string;
-                        granted?: boolean;
-                        /** Format: int64 */
-                        limit_value?: number | null;
+                        data?: {
+                            feature_key?: string;
+                            granted?: boolean;
+                            /** Format: int64 */
+                            limit_value?: number | null;
+                        };
                     };
                 };
             };
@@ -16682,7 +16832,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SubscriptionUsage"];
+                    "application/json": {
+                        data?: components["schemas"]["SubscriptionUsage"];
+                    };
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -17166,7 +17318,12 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "disconnected";
+                    };
+                };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
@@ -17195,7 +17352,12 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "updated";
+                    };
+                };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
@@ -17291,7 +17453,12 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": {
+                        /** @constant */
+                        status?: "disconnected";
+                    };
+                };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
