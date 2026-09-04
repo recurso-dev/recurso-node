@@ -346,6 +346,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/customers/{id}/financial-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Customer financial summary
+         * @description A customer's invoice-derived financial position, one block per currency: outstanding (open + past_due amount remaining), the past-due slice with its invoice count, lifetime billed (issued total), and paid. Written-off invoices are excluded from outstanding; draft/void from billed/paid. Money is never summed across currencies.
+         */
+        get: operations["getCustomerFinancialSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/customers/{id}/credit-statement": {
         parameters: {
             query?: never;
@@ -659,6 +679,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/subscriptions/{id}/financial-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Subscription financial summary
+         * @description One subscription's financial position: MRR (monthly-normalized list price, counted only when active — 0 otherwise, matching the tenant-wide MRR definition), the recurring list price + interval, the next-invoice date and base amount when it will renew (base = list price only; it excludes tax/coupon/add-ons/usage), and its invoice-derived outstanding position per currency. Read-only; cross-tenant ids return 404.
+         */
+        get: operations["getSubscriptionFinancialSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/subscriptions/{id}/cancel-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview the financial consequence of a cancellation
+         * @description The deterministic financial forecast of canceling a subscription, shown BEFORE the mutation so an operator never cancels blind. Exposes only what the engine computes deterministically: effective time + resulting status, the still-deferred revenue an immediate cancel forfeits and recognizes as breakage (computed read-only from the same rev-rec data the mutation uses), the future recurring amount that will no longer bill, and flat_fee_refund (constant 0 — the flat fee is paid in advance, not refunded). It deliberately omits an unused-time proration credit (the cancel mutation posts none) and a final metered-usage figure (only the mutating invoice path can produce it). The cancel mutation is unchanged. Read-only; cross-tenant ids return 404.
+         */
+        get: operations["getSubscriptionCancelPreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/subscriptions/{id}": {
         parameters: {
             query?: never;
@@ -670,6 +730,26 @@ export interface paths {
         get: operations["getSubscription"];
         /** Change a subscription's plan (upgrade/downgrade) */
         put: operations["updateSubscription"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/subscriptions/{id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Subscription lifecycle timeline
+         * @description Every recorded status transition (trialing → active → past_due → paused / canceled) and plan switch for the subscription, oldest first — captured by a database trigger so no change is missed. change_type is "status" (values are status strings) or "plan" (values are plan ids). The first status row is the creation state (null from_value). Read-only; a missing or cross-tenant id returns 404.
+         */
+        get: operations["getSubscriptionHistory"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -907,6 +987,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/invoices/{id}/journal-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Invoice journal entries (ledger drill)
+         * @description Every ledger posting that references this invoice — its Code-1 issuance, Code-6 tax reclass, Code-3 payment, and any credit/refund/write-off legs — each as a transfer with its debit and credit account (code + name), amount, posting code, and timestamp. The finance-accounting side of the invoice page. Read-only; an existing invoice with no postings yet returns an empty list.
+         */
+        get: operations["getInvoiceJournalEntries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/credit-notes/{id}/journal-entries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Credit note journal entries (ledger drill)
+         * @description Every ledger posting that references this credit note — its Customer-Credit liability leg, any tax reversal, and refund/write-off legs — each as a transfer with its debit and credit account (code + name), amount, posting code, and timestamp. The finance-accounting side of the credit-note page. Read-only; an existing note with no postings yet returns an empty list.
+         */
+        get: operations["getCreditNoteJournalEntries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payment-attempts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a payment attempt by id
+         * @description One payment attempt as an addressable object, resolved with the invoice-level context it belongs to (invoice number, currency, customer, and subscription for recurring invoices). customer_id/subscription_id are read-time joins off the attempt's invoice. Read-only; cross-tenant ids return 404.
+         */
+        get: operations["getPaymentAttempt"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payment-attempts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Payments log (tenant-wide payment attempts)
+         * @description Every gateway payment attempt for the tenant, newest first, paginated, with an optional status filter (initiated/processing/succeeded/failed/ returned). Each row carries its invoice number. The operator's failed- payments log. Read-only.
+         */
+        get: operations["listPaymentAttempts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/invoices/{id}/payment-attempts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Invoice payment attempts (settlement history)
+         * @description An invoice's payment attempts, oldest first — the retry/settlement history: a card's failed → succeeded, or an ACH debit's initiated → processing → succeeded → returned. Each attempt carries its status, failure code, gateway + payment-intent reference, amount, and settled-at. Read-only; an existing invoice with no attempts returns an empty list.
+         */
+        get: operations["getInvoicePaymentAttempts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/invoices/{id}/status-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Invoice status timeline
+         * @description Every recorded transition of the invoice's status (draft → open → paid / past_due / uncollectible / void), oldest first — captured by a database trigger so no transition is missed. The first row is the creation state (null from_status). Read-only; an existing invoice with no recorded transitions returns an empty list.
+         */
+        get: operations["getInvoiceStatusHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/invoices/{id}/pdf": {
         parameters: {
             query?: never;
@@ -1048,7 +1248,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get one coupon (tenant-scoped)
+         * @description Fetches a single coupon by id — the addressable object behind the dashboard's coupon page. A missing or cross-tenant id returns 404.
+         */
+        get: operations["getCoupon"];
         /**
          * Deactivate or reactivate a coupon
          * @description Flips the redemption gate. `active: false` stops new subscriptions from redeeming the code; existing subscriptions keep their applied discount. `active: true` restores redeemability.
@@ -2233,6 +2437,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/disputes/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one invoice dispute (tenant-scoped)
+         * @description Fetches a single dispute by id — the addressable object behind the dashboard's dispute page. A missing or cross-tenant id returns 404.
+         */
+        get: operations["getDispute"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/disputes/{id}/resolve": {
         parameters: {
             query?: never;
@@ -2546,6 +2770,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/ledger/transactions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a single journal entry (posted transaction) by id
+         * @description One posted transaction (a single balanced double-entry journal entry) by its ledger_transactions id, flattened with both account ids, codes and names so each leg deep-links to its account page. The addressable journal-entry object a reconciliation discrepancy's transaction points to. Read-only; cross-tenant ids return 404.
+         */
+        get: operations["getLedgerTransaction"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/ledger/entries": {
         parameters: {
             query?: never;
@@ -2654,6 +2898,50 @@ export interface paths {
         get: operations["runReconciliation"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/finance/reconciliation/runs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a recorded reconciliation run with its discrepancies
+         * @description One recorded run made addressable: the run summary (who/when/scope/verdict) plus the per-run discrepancy rows persisted at record time — what disagreed, by how much, and why. discrepancies_truncated is true when fewer rows were stored than counted (the live-run listing cap, or a run recorded before per-run persistence existed). Read-only; cross-tenant ids return 404.
+         */
+        get: operations["getReconciliationRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/finance/reconciliation/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List recorded reconciliation runs (audit trail)
+         * @description The tenant's recorded reconciliation runs, newest first — when it was checked, by whom, and whether it tied out (total_discrepancies == 0).
+         */
+        get: operations["listReconciliationRuns"];
+        put?: never;
+        /**
+         * Run and record a reconciliation (audit trail)
+         * @description Runs a reconciliation AND records a summary of it to the run history — the explicit "run and record" action, distinct from the side-effect-free GET. Returns the full report. Best-effort persistence: a storage failure still returns the report.
+         */
+        post: operations["recordReconciliation"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4073,6 +4361,26 @@ export interface paths {
          * @description A metric is a tenant-defined meter over usage events; its `code` doubles as the event `dimension` it aggregates. Aggregations: `count`, `sum`, `max`, `unique` (distinct values of the event property named by `field_name`), `latest` (most recent event's quantity), and `percentile` (the p-th percentile of quantities, with `field_name` carrying the percentile 1-99, e.g. "95").
          */
         post: operations["createBillableMetric"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/billable-metrics/{id}/charges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Plans pricing on this meter (reverse lookup)
+         * @description The charges that consume this billable metric, each with its plan (name, code, active) and charge model — the meter page's "which plans price on this meter", the reverse of a plan's charges. Read-only.
+         */
+        get: operations["getMetricCharges"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6175,6 +6483,8 @@ export interface components {
             /** @description Whether TigerBeetle was included in the comparison. */
             tb_compared?: boolean;
             tb_skip_reason?: string;
+            /** @description The tenant's reporting currency; discrepancy amounts are minor units of this currency so clients can format them as money. */
+            reporting_currency?: string;
         };
         TaxNexus: {
             /** @example CA */
@@ -7326,7 +7636,8 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        message?: string;
+                        /** @example removed */
+                        status?: string;
                     };
                 };
             };
@@ -7578,6 +7889,52 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getCustomerFinancialSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The financial summary. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            customer_id?: string;
+                            currencies?: {
+                                currency?: string;
+                                /** Format: int64 */
+                                outstanding?: number;
+                                /** Format: int64 */
+                                past_due?: number;
+                                past_due_count?: number;
+                                /** Format: int64 */
+                                billed?: number;
+                                /** Format: int64 */
+                                paid?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Customer not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     getCreditStatement: {
         parameters: {
             query?: never;
@@ -7802,7 +8159,7 @@ export interface operations {
     listCompareReports: {
         parameters: {
             query?: {
-                /** @description Max runs returned (default 50 */
+                /** @description Max runs returned (default 50, capped at 200). */
                 limit?: number;
             };
             header?: never;
@@ -8264,6 +8621,132 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getSubscriptionFinancialSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription's financial summary. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            subscription_id?: string;
+                            status?: string;
+                            currency?: string;
+                            /**
+                             * Format: int64
+                             * @description Monthly-normalized recurring value; 0 unless active.
+                             */
+                            mrr?: number;
+                            /** Format: int64 */
+                            recurring_amount?: number;
+                            interval_unit?: string;
+                            interval_count?: number;
+                            /** Format: date-time */
+                            current_period_start?: string;
+                            /** Format: date-time */
+                            current_period_end?: string;
+                            /** Format: date-time */
+                            next_invoice_date?: string | null;
+                            /**
+                             * Format: int64
+                             * @description Plan list price only; excludes tax/coupon/add-ons/usage. Never the total due.
+                             */
+                            next_invoice_base_amount?: number;
+                            /** Format: uuid */
+                            coupon_id?: string | null;
+                            discount_active?: boolean;
+                            outstanding?: {
+                                currency?: string;
+                                /** Format: int64 */
+                                outstanding?: number;
+                                /** Format: int64 */
+                                past_due?: number;
+                                past_due_count?: number;
+                                /** Format: int64 */
+                                billed?: number;
+                                /** Format: int64 */
+                                paid?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Subscription not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getSubscriptionCancelPreview: {
+        parameters: {
+            query?: {
+                /** @description Preview an immediate cancel (true) vs cancel-at-period-end (default). */
+                immediately?: boolean;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The cancel preview. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            subscription_id?: string;
+                            immediately?: boolean;
+                            /** Format: date-time */
+                            effective_date?: string;
+                            resulting_status?: string;
+                            cancel_at_period_end?: boolean;
+                            currency?: string;
+                            /** Format: int64 */
+                            deferred_revenue_forfeited?: number;
+                            /** Format: int64 */
+                            recognized_as_breakage?: number;
+                            /** Format: int64 */
+                            avoided_future_recurring?: number;
+                            /**
+                             * Format: int64
+                             * @description Always 0 — flat fee paid in advance
+                             */
+                            flat_fee_refund?: number;
+                        };
+                    };
+                };
+            };
+            /** @description Subscription not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     getSubscription: {
@@ -8320,6 +8803,53 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getSubscriptionHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The subscription's lifecycle timeline. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            subscription_id?: string;
+                            history?: {
+                                /** Format: uuid */
+                                id?: string;
+                                /** Format: uuid */
+                                subscription_id?: string;
+                                /** @enum {string} */
+                                change_type?: "status" | "plan";
+                                from_value?: string | null;
+                                to_value?: string | null;
+                                /** Format: date-time */
+                                changed_at?: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Subscription not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     previewPlanChange: {
@@ -8376,6 +8906,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
         };
     };
     reactivateSubscription: {
@@ -8431,6 +8962,8 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     resumeSubscription: {
@@ -8457,6 +8990,8 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     listUnbilledCharges: {
@@ -8464,7 +8999,7 @@ export interface operations {
             query?: {
                 /** @description Max rows returned (clamped to 1000). */
                 limit?: number;
-                /** @description Rows to skip */
+                /** @description Rows to skip, for paging past the clamp. */
                 offset?: number;
             };
             header?: never;
@@ -8682,6 +9217,8 @@ export interface operations {
                 customer_id?: string;
                 /** @description Filter to one subscription's invoices (tenant-scoped). Ignored when customer_id is also provided. */
                 subscription_id?: string;
+                /** @description Case-insensitive substring search on invoice_number (tenant-scoped), newest first. Backs the command-palette invoice lookup. Ignored when customer_id or subscription_id is provided. */
+                q?: string;
             };
             header?: never;
             path?: never;
@@ -8727,6 +9264,333 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    getInvoiceJournalEntries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The invoice's journal entries. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            invoice_id?: string;
+                            entries?: {
+                                /** Format: uuid */
+                                transaction_id?: string;
+                                /** Format: date-time */
+                                timestamp?: string;
+                                code?: number;
+                                /**
+                                 * Format: uuid
+                                 * @description Debit account id — deep-links the leg to its ledger account.
+                                 */
+                                debit_account_id?: string;
+                                debit_account_code?: number;
+                                debit_account_name?: string;
+                                /**
+                                 * Format: uuid
+                                 * @description Credit account id — deep-links the leg to its ledger account.
+                                 */
+                                credit_account_id?: string;
+                                credit_account_code?: number;
+                                credit_account_name?: string;
+                                /** Format: int64 */
+                                amount?: number;
+                                /** Format: uuid */
+                                reference_id?: string;
+                                description?: string;
+                                accounting_version?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Invoice not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getCreditNoteJournalEntries: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The credit note's journal entries. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            credit_note_id?: string;
+                            entries?: {
+                                /** Format: uuid */
+                                transaction_id?: string;
+                                /** Format: date-time */
+                                timestamp?: string;
+                                code?: number;
+                                /**
+                                 * Format: uuid
+                                 * @description Debit account id — deep-links the leg to its ledger account.
+                                 */
+                                debit_account_id?: string;
+                                debit_account_code?: number;
+                                debit_account_name?: string;
+                                /**
+                                 * Format: uuid
+                                 * @description Credit account id — deep-links the leg to its ledger account.
+                                 */
+                                credit_account_id?: string;
+                                credit_account_code?: number;
+                                credit_account_name?: string;
+                                /** Format: int64 */
+                                amount?: number;
+                                /** Format: uuid */
+                                reference_id?: string;
+                                description?: string;
+                                accounting_version?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Credit note not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getPaymentAttempt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The payment attempt. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            id?: string;
+                            /** Format: uuid */
+                            invoice_id?: string;
+                            invoice_number?: string;
+                            currency?: string;
+                            /** Format: uuid */
+                            customer_id?: string;
+                            /** Format: uuid */
+                            subscription_id?: string | null;
+                            gateway?: string;
+                            method?: string;
+                            gateway_payment_intent_id?: string;
+                            /** @enum {string} */
+                            status?: "initiated" | "processing" | "succeeded" | "failed" | "returned";
+                            failure_code?: string;
+                            /** Format: int64 */
+                            amount?: number;
+                            /** Format: date-time */
+                            created_at?: string;
+                            /** Format: date-time */
+                            updated_at?: string;
+                            /** Format: date-time */
+                            settled_at?: string | null;
+                        };
+                    };
+                };
+            };
+            /** @description Payment not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listPaymentAttempts: {
+        parameters: {
+            query?: {
+                status?: "initiated" | "processing" | "succeeded" | "failed" | "returned";
+                /** @description Case-insensitive substring search on the attempt's invoice_number or gateway payment reference (tenant-scoped), newest first. Backs the command-palette payment lookup; the status filter is ignored on the search path. */
+                q?: string;
+                page?: number;
+                per_page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The payments log page. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            id?: string;
+                            /** Format: uuid */
+                            invoice_id?: string;
+                            invoice_number?: string;
+                            currency?: string;
+                            gateway?: string;
+                            method?: string;
+                            gateway_payment_intent_id?: string;
+                            /** @enum {string} */
+                            status?: "initiated" | "processing" | "succeeded" | "failed" | "returned";
+                            failure_code?: string;
+                            /** Format: int64 */
+                            amount?: number;
+                            /** Format: date-time */
+                            created_at?: string;
+                            /** Format: date-time */
+                            settled_at?: string | null;
+                        }[];
+                        pagination?: {
+                            page?: number;
+                            per_page?: number;
+                            total?: number;
+                            total_pages?: number;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    getInvoicePaymentAttempts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The invoice's payment attempts. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            invoice_id?: string;
+                            attempts?: {
+                                /** Format: uuid */
+                                id?: string;
+                                /** Format: uuid */
+                                invoice_id?: string;
+                                gateway?: string;
+                                method?: string;
+                                gateway_payment_intent_id?: string;
+                                /** @enum {string} */
+                                status?: "initiated" | "processing" | "succeeded" | "failed" | "returned";
+                                failure_code?: string;
+                                /** Format: int64 */
+                                amount?: number;
+                                /** Format: date-time */
+                                created_at?: string;
+                                /** Format: date-time */
+                                settled_at?: string | null;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Invoice not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getInvoiceStatusHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The invoice's status timeline. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            invoice_id?: string;
+                            history?: {
+                                /** Format: uuid */
+                                id?: string;
+                                /** Format: uuid */
+                                invoice_id?: string;
+                                from_status?: string | null;
+                                to_status?: string;
+                                /** Format: date-time */
+                                changed_at?: string;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Invoice not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     downloadInvoicePDF: {
@@ -8925,6 +9789,31 @@ export interface operations {
             404: components["responses"]["NotFound"];
         };
     };
+    getCoupon: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The coupon. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["Coupon"];
+                    };
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
     updateCoupon: {
         parameters: {
             query?: never;
@@ -8964,7 +9853,7 @@ export interface operations {
             query?: {
                 /** @description Max rows returned (clamped to 1000). */
                 limit?: number;
-                /** @description Rows to skip */
+                /** @description Rows to skip, for paging past the clamp. */
                 offset?: number;
             };
             header?: never;
@@ -9159,7 +10048,7 @@ export interface operations {
             query?: {
                 /** @description Max rows returned (clamped to 1000). */
                 limit?: number;
-                /** @description Rows to skip */
+                /** @description Rows to skip, for paging past the clamp. */
                 offset?: number;
                 /** @description Filter by customer. */
                 customer_id?: string;
@@ -9372,7 +10261,7 @@ export interface operations {
             query?: {
                 /** @description Max rows returned (clamped to 1000). */
                 limit?: number;
-                /** @description Rows to skip */
+                /** @description Rows to skip, for paging past the clamp. */
                 offset?: number;
                 status?: components["schemas"]["QuoteStatus"];
                 customer_id?: string;
@@ -9724,7 +10613,7 @@ export interface operations {
     listWebhookEndpointDeliveries: {
         parameters: {
             query?: {
-                /** @description Max rows returned (default 50 */
+                /** @description Max rows returned (default 50, capped at 500). */
                 limit?: number;
                 /** @description Rows to skip. */
                 offset?: number;
@@ -9762,7 +10651,7 @@ export interface operations {
                 type?: string;
                 /** @description Filter to one object's events (per-object timeline); takes precedence over `type`. */
                 object_id?: string;
-                /** @description Max rows returned (default 50 */
+                /** @description Max rows returned (default 50, capped at 500). */
                 limit?: number;
                 /** @description Rows to skip. */
                 offset?: number;
@@ -11040,7 +11929,7 @@ export interface operations {
             query?: {
                 /** @description Max rows returned (clamped to 1000). */
                 limit?: number;
-                /** @description Rows to skip */
+                /** @description Rows to skip, for paging past the clamp. */
                 offset?: number;
                 /** @description Filter by dispute status. */
                 status?: "open" | "resolved";
@@ -11064,6 +11953,37 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getDispute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The dispute. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["InvoiceDispute"];
+                    };
+                };
+            };
+            /** @description Dispute not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     resolveDispute: {
@@ -11272,7 +12192,7 @@ export interface operations {
     getCollectionsQueue: {
         parameters: {
             query?: {
-                /** @description Page size (default 50 */
+                /** @description Page size (default 50, capped at 250). Also accepts page/per_page. */
                 limit?: number;
                 /** @description Rows to skip (overrides page-derived offset). */
                 offset?: number;
@@ -11552,7 +12472,7 @@ export interface operations {
             query?: {
                 /** @description Max rows returned (clamped to 1000). */
                 limit?: number;
-                /** @description Rows to skip */
+                /** @description Rows to skip, for paging past the clamp. */
                 offset?: number;
             };
             header?: never;
@@ -11573,6 +12493,60 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getLedgerTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The journal entry. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            transaction_id?: string;
+                            /** Format: date-time */
+                            timestamp?: string;
+                            code?: number;
+                            /** Format: uuid */
+                            debit_account_id?: string;
+                            debit_account_code?: number;
+                            debit_account_name?: string;
+                            /** Format: uuid */
+                            credit_account_id?: string;
+                            credit_account_code?: number;
+                            credit_account_name?: string;
+                            /** Format: int64 */
+                            amount?: number;
+                            /** Format: uuid */
+                            reference_id?: string;
+                            description?: string;
+                            accounting_version?: number;
+                            /** Format: uuid */
+                            entity_id?: string | null;
+                            entity_name?: string;
+                        };
+                    };
+                };
+            };
+            /** @description Transaction not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
         };
     };
     listLedgerEntries: {
@@ -11697,6 +12671,130 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Reconciliation report. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: components["schemas"]["ReconciliationReport"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getReconciliationRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The recorded run with its discrepancies. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            id?: string;
+                            /** Format: uuid */
+                            run_by?: string | null;
+                            /** Format: date-time */
+                            run_at?: string;
+                            invoices_checked?: number;
+                            paid_invoices_checked?: number;
+                            total_discrepancies?: number;
+                            tb_compared?: boolean;
+                            tb_accounts_checked?: number;
+                            tb_transfers_checked?: number;
+                            /** Format: date-time */
+                            created_at?: string;
+                            discrepancies_truncated?: boolean;
+                            discrepancies?: {
+                                type?: string;
+                                /** Format: uuid */
+                                invoice_id?: string | null;
+                                /** Format: uuid */
+                                transaction_id?: string | null;
+                                /** Format: uuid */
+                                reference_id?: string | null;
+                                account_code?: number;
+                                /** Format: int64 */
+                                expected_amount?: number;
+                                /** Format: int64 */
+                                found_amount?: number;
+                            }[];
+                        };
+                    };
+                };
+            };
+            /** @description Reconciliation run not found. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    listReconciliationRuns: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The recorded runs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            id?: string;
+                            /** Format: uuid */
+                            run_by?: string | null;
+                            /** Format: date-time */
+                            run_at?: string;
+                            invoices_checked?: number;
+                            paid_invoices_checked?: number;
+                            total_discrepancies?: number;
+                            tb_compared?: boolean;
+                            tb_accounts_checked?: number;
+                            tb_transfers_checked?: number;
+                            /** Format: date-time */
+                            created_at?: string;
+                        }[];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    recordReconciliation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reconciliation report (its summary was recorded). */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -12813,7 +13911,7 @@ export interface operations {
     listReferrals: {
         parameters: {
             query?: {
-                /** @description Page size (default 50 */
+                /** @description Page size (default 50, capped at 250). Also accepts page/per_page. */
                 limit?: number;
                 /** @description Rows to skip (overrides page-derived offset). */
                 offset?: number;
@@ -12946,7 +14044,7 @@ export interface operations {
     listGifts: {
         parameters: {
             query?: {
-                /** @description Page size (default 50 */
+                /** @description Page size (default 50, capped at 250). Also accepts page/per_page. */
                 limit?: number;
                 /** @description Rows to skip (overrides page-derived offset). */
                 offset?: number;
@@ -13076,7 +14174,7 @@ export interface operations {
             query?: {
                 /** @description Max rows returned (clamped to 1000). */
                 limit?: number;
-                /** @description Rows to skip */
+                /** @description Rows to skip, for paging past the clamp. */
                 offset?: number;
             };
             header?: never;
@@ -13207,7 +14305,7 @@ export interface operations {
             query?: {
                 /** @description Max rows returned (clamped to 1000). */
                 limit?: number;
-                /** @description Rows to skip */
+                /** @description Rows to skip, for paging past the clamp. */
                 offset?: number;
             };
             header?: never;
@@ -13271,7 +14369,7 @@ export interface operations {
             query?: {
                 /** @description Max rows returned (clamped to 1000). */
                 limit?: number;
-                /** @description Rows to skip */
+                /** @description Rows to skip, for paging past the clamp. */
                 offset?: number;
             };
             header?: never;
@@ -13845,7 +14943,7 @@ export interface operations {
             query?: {
                 /** @description Max rows returned (clamped to 1000). */
                 limit?: number;
-                /** @description Rows to skip */
+                /** @description Rows to skip, for paging past the clamp. */
                 offset?: number;
                 /** @description Minimum churn score (0-100) to include. */
                 threshold?: number;
@@ -14700,6 +15798,47 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             /** @description A metric with this code already exists. */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getMetricCharges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The charges consuming this metric. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        data?: {
+                            /** Format: uuid */
+                            charge_id?: string;
+                            /** Format: uuid */
+                            plan_id?: string;
+                            plan_name?: string;
+                            plan_code?: string;
+                            plan_active?: boolean;
+                            charge_model?: string;
+                            pay_in_advance?: boolean;
+                        }[];
+                    };
+                };
+            };
+            /** @description Metric not found. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

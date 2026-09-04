@@ -24,16 +24,12 @@ export interface ListParams {
 export interface SubscriptionListParams extends ListParams {
     /** Filter to one plan's subscriptions. */
     plan_id?: string;
-<<<<<<< HEAD
     /** Filter to one customer's subscriptions. */
     customer_id?: string;
-=======
->>>>>>> origin/main
     /** Keep subscriptions whose current period started at/after this RFC 3339 instant. */
     started_after?: string;
 }
 
-<<<<<<< HEAD
 /** Invoice list filters (all server-side). */
 export interface InvoiceListParams extends ListParams {
     /** Filter to one customer's invoices. */
@@ -42,8 +38,6 @@ export interface InvoiceListParams extends ListParams {
     subscription_id?: string;
 }
 
-=======
->>>>>>> origin/main
 /** Plan list filters (all server-side). */
 export interface PlanListParams extends ListParams {
     /** Keep plans that have a price in this currency (e.g. "USD"). */
@@ -56,11 +50,8 @@ export interface PlanListParams extends ListParams {
 export interface EventListParams extends ListParams {
     /** Filter to one event type (e.g. "invoice.paid"); `events.types()` lists the catalog. */
     type?: string;
-<<<<<<< HEAD
     /** Filter to one object's events — the per-object timeline. Takes precedence over `type`. */
     object_id?: string;
-=======
->>>>>>> origin/main
 }
 
 /**
@@ -332,6 +323,58 @@ export interface LedgerEntriesParams {
     [key: string]: JsonValue | undefined;
 }
 
+/** Payment-attempt log filters (all server-side). */
+export interface PaymentAttemptListParams {
+    status?: 'initiated' | 'processing' | 'succeeded' | 'failed' | 'returned';
+    /** Substring search on invoice number or gateway reference; ignores `status`. */
+    q?: string;
+    page?: number;
+    per_page?: number;
+}
+
+/** A calendar month, optionally scoped to one legal entity. */
+export interface PeriodParams {
+    /** 1-12. */
+    month: number;
+    year: number;
+    entity_id?: string;
+}
+
+/** Trial-balance scoping: one entity, or every entity rolled up by account code. */
+export interface TrialBalanceParams {
+    entity_id?: string;
+    consolidated?: boolean;
+}
+
+/** General-ledger CSV export scoping; pass `month` and `year` together for one period. */
+export interface LedgerExportParams {
+    entity_id?: string;
+    month?: number;
+    year?: number;
+}
+
+/** MRR waterfall window (ISO dates); defaults to the trailing month. */
+export interface MRRWaterfallParams {
+    start?: string;
+    end?: string;
+    entity_id?: string;
+}
+
+/** US sales-tax liability period: `from`+`to` (to exclusive) or `year`. */
+export interface TaxLiabilityParams {
+    year?: number;
+    from?: string;
+    to?: string;
+}
+
+/** Query parameters of the accounting OAuth redirect target. */
+export interface AccountingCallbackParams {
+    code: string;
+    state: string;
+    /** QuickBooks company id, sent by Intuit on the redirect. */
+    realmId?: string;
+}
+
 /**
  * Official Node.js SDK for the Recurso billing API.
  *
@@ -367,8 +410,13 @@ export class Recurso {
         (await this.client.post<T>(path, data)).data;
     private put = async <T = ApiResponse>(path: string, data?: unknown): Promise<T> =>
         (await this.client.put<T>(path, data)).data;
+    private patch = async <T = ApiResponse>(path: string, data?: unknown): Promise<T> =>
+        (await this.client.patch<T>(path, data)).data;
     private del = async <T = ApiResponse>(path: string): Promise<T> =>
         (await this.client.delete<T>(path)).data;
+    /** GET a non-JSON document (HTML/CSV/plain text) as a string. */
+    private getText = async (path: string, params?: object): Promise<string> =>
+        (await this.client.get<string>(path, { params, responseType: 'text' })).data;
 
     public account = {
         get: () => this.get<Res<'getAccount'>>('/v1/account'),
@@ -409,6 +457,9 @@ export class Recurso {
          */
         creditStatement: (id: string) =>
             this.get<Res<'getCreditStatement'>>(`/v1/customers/${id}/credit-statement`),
+        /** Lifetime billed/paid/outstanding totals and credit balance for one customer. */
+        financialSummary: (id: string) =>
+            this.get<Res<'getCustomerFinancialSummary'>>(`/v1/customers/${id}/financial-summary`),
     };
 
     public plans = {
@@ -439,6 +490,12 @@ export class Recurso {
             this.put<Res<'setPlanCharges'>>(`/v1/plans/${planId}/charges`, charges),
         getCharges: (planId: string) =>
             this.get<Res<'getPlanCharges'>>(`/v1/plans/${planId}/charges`),
+        /**
+         * Rate a PROPOSED charge set against sample usage (read-only): rated
+         * lines, subtotal, and a balanced ledger preview. Nothing is persisted.
+         */
+        simulateCharges: (planId: string, data: Body<'simulateCharges'>) =>
+            this.post<Res<'simulateCharges'>>(`/v1/plans/${planId}/simulate-charges`, data),
     };
 
     public subscriptions = {
@@ -494,6 +551,39 @@ export class Recurso {
             this.put<Res<'setSubscriptionCommitment'>>(`/v1/subscriptions/${id}/commitment`, {
                 amount,
             }),
+        /** Attach a plan as a priced add-on (quantity × add-on price from the next invoice). */
+        addAddon: (id: string, data: Body<'addSubscriptionAddon'>) =>
+            this.post<Res<'addSubscriptionAddon'>>(`/v1/subscriptions/${id}/addons`, data),
+        addons: (id: string) =>
+            this.get<Res<'listSubscriptionAddons'>>(`/v1/subscriptions/${id}/addons`),
+        /** Detach an add-on; takes effect from the next recurring invoice. */
+        removeAddon: (id: string, addonId: string) =>
+            this.del<Res<'removeSubscriptionAddon'>>(`/v1/subscriptions/${id}/addons/${addonId}`),
+        /**
+         * Bill accrued progressive usage now (interim invoice) once the
+         * threshold is reached; `data: null` when nothing is due.
+         */
+        billUsageNow: (id: string) =>
+            this.post<Res<'billUsageNow'>>(`/v1/subscriptions/${id}/bill-usage`),
+        /** Deterministic financial forecast of a cancel, before mutating anything. */
+        cancelPreview: (id: string, params?: { immediately?: boolean }) =>
+            this.get<Res<'getSubscriptionCancelPreview'>>(
+                `/v1/subscriptions/${id}/cancel-preview`,
+                params,
+            ),
+        /** The consent record tied to a subscription. */
+        consent: (id: string) =>
+            this.get<Res<'getSubscriptionConsent'>>(`/v1/subscriptions/${id}/consent`),
+        financialSummary: (id: string) =>
+            this.get<Res<'getSubscriptionFinancialSummary'>>(
+                `/v1/subscriptions/${id}/financial-summary`,
+            ),
+        /** Every status transition and plan switch, oldest first (trigger-captured). */
+        history: (id: string) =>
+            this.get<Res<'getSubscriptionHistory'>>(`/v1/subscriptions/${id}/history`),
+        /** The catalog of cancellation reasons a cancel may cite. */
+        cancellationReasons: () =>
+            this.get<Res<'listCancellationReasons'>>('/v1/cancellation-reasons'),
     };
 
     public invoices = {
@@ -508,6 +598,43 @@ export class Recurso {
             this.post<Res<'retryEInvoice'>>(`/v1/invoices/${id}/einvoice/retry`),
         cancelEInvoice: (id: string, data?: Body<'cancelEInvoice'>) =>
             this.post<Res<'cancelEInvoice'>>(`/v1/invoices/${id}/einvoice/cancel`, data),
+        /** Print-ready HTML rendering of the invoice (authenticated; not public). */
+        pdf: (id: string) => this.getText(`/v1/invoices/${id}/pdf`),
+        /** HTML preview of the invoice as the customer would see it. */
+        previewHtml: (id: string) => this.getText(`/v1/invoices/${id}/preview`),
+        /** (Re)send the invoice email with its hosted Pay Now link. */
+        send: (id: string) => this.post<Res<'sendInvoiceEmail'>>(`/v1/invoices/${id}/send`),
+        /** EU e-invoice (EN 16931 / UBL) transmission status. */
+        euEInvoiceStatus: (id: string) =>
+            this.get<Res<'getEUEInvoice'>>(`/v1/invoices/${id}/eu-einvoice`),
+        /** Regenerate and re-transmit the EU e-invoice. */
+        retryEUEInvoice: (id: string) =>
+            this.post<Res<'retryEUEInvoice'>>(`/v1/invoices/${id}/eu-einvoice/retry`),
+        /** Ledger drill: the journal entries this invoice posted. */
+        journalEntries: (id: string) =>
+            this.get<Res<'getInvoiceJournalEntries'>>(`/v1/invoices/${id}/journal-entries`),
+        /** Retry/settlement history: every payment attempt, oldest first. */
+        paymentAttempts: (id: string) =>
+            this.get<Res<'getInvoicePaymentAttempts'>>(`/v1/invoices/${id}/payment-attempts`),
+        /** Whether the dunning payment wall is active for this invoice. */
+        paymentWall: (id: string) =>
+            this.get<Res<'getPaymentWallStatus'>>(`/v1/invoices/${id}/payment-wall`),
+        /** The invoice's status timeline. */
+        statusHistory: (id: string) =>
+            this.get<Res<'getInvoiceStatusHistory'>>(`/v1/invoices/${id}/status-history`),
+    };
+
+    /** Tenant-wide gateway payment attempts (the operator's payments log). */
+    public paymentAttempts = {
+        list: (params?: PaymentAttemptListParams) =>
+            this.get<Res<'listPaymentAttempts'>>('/v1/payment-attempts', params),
+        get: (id: string) => this.get<Res<'getPaymentAttempt'>>(`/v1/payment-attempts/${id}`),
+    };
+
+    public payments = {
+        /** Create a gateway payment order for an invoice (public, rate-limited). */
+        createOrder: (data: Body<'createPaymentOrder'>) =>
+            this.post<Res<'createPaymentOrder'>>('/payments/order', data),
     };
 
     public coupons = {
@@ -664,6 +791,9 @@ export class Recurso {
         /** Delete a metric (409 while a plan charge references it). */
         delete: (id: string) =>
             this.del<Res<'deleteBillableMetric'>>(`/v1/billable-metrics/${id}`),
+        /** Reverse lookup: the plan charges priced on this meter. */
+        charges: (id: string) =>
+            this.get<Res<'getMetricCharges'>>(`/v1/billable-metrics/${id}/charges`),
     };
 
     public creditNotes = {
@@ -673,6 +803,19 @@ export class Recurso {
             this.get<Res<'listCreditNotes'>>('/v1/credit-notes', params),
         /** One credit note, tenant-scoped; a foreign or missing id is a flat 404. */
         get: (id: string) => this.get<Res<'getCreditNote'>>(`/v1/credit-notes/${id}`),
+        /** Approve a pending credit note (posts its ledger legs). */
+        approve: (id: string) =>
+            this.post<Res<'approveCreditNote'>>(`/v1/credit-notes/${id}/approve`),
+        /** Reject a pending credit note. */
+        reject: (id: string) =>
+            this.post<Res<'rejectCreditNote'>>(`/v1/credit-notes/${id}/reject`),
+        /** Void an issued account-credit note (reversing entry, never a delete). */
+        void: (id: string) => this.post<Res<'voidCreditNote'>>(`/v1/credit-notes/${id}/void`),
+        /** Ledger drill: the journal entries this credit note posted. */
+        journalEntries: (id: string) =>
+            this.get<Res<'getCreditNoteJournalEntries'>>(`/v1/credit-notes/${id}/journal-entries`),
+        /** Print-ready HTML rendering of the credit note (authenticated; not public). */
+        pdf: (id: string) => this.getText(`/v1/credit-notes/${id}/pdf`),
     };
 
     public quotes = {
@@ -737,6 +880,8 @@ export class Recurso {
     public disputes = {
         /** List invoice disputes (tenant-scoped). */
         list: (params?: ListParams) => this.get<Res<'listDisputes'>>('/v1/disputes', params),
+        /** One dispute; a missing or cross-tenant id is a flat 404. */
+        get: (id: string) => this.get<Res<'getDispute'>>(`/v1/disputes/${id}`),
         /** Mark an open dispute resolved, with an optional note. */
         resolve: (id: string, data?: Body<'resolveDispute'>) =>
             this.post<Res<'resolveDispute'>>(`/v1/disputes/${id}/resolve`, data),
@@ -811,6 +956,29 @@ export class Recurso {
             this.get<Res<'getInvoiceAging'>>('/v1/analytics/invoice-aging', params),
         /** Best-time-to-retry insights from historical dunning outcomes. */
         dunningTiming: () => this.get<Res<'getDunningTiming'>>('/v1/analytics/dunning/timing'),
+        /** Recent dunning retry attempts, newest first (limit ≤ 200). */
+        dunningHistory: (params?: { limit?: number }) =>
+            this.get<Res<'getDunningHistory'>>('/v1/analytics/dunning/history', params),
+        dunningOverview: () =>
+            this.get<Res<'getDunningOverview'>>('/v1/analytics/dunning/overview'),
+        /** Revenue recovered by the retry engine: totals + last-12-months series. */
+        dunningRecovered: () =>
+            this.get<Res<'getDunningRecovered'>>('/v1/analytics/dunning/recovered'),
+        /** The learned retry-timing weights. */
+        dunningWeights: () => this.get<Res<'getDunningWeights'>>('/v1/analytics/dunning/weights'),
+        /** MRR movement (new/expansion/contraction/churn/reactivation) + NDR/GDR. */
+        mrrWaterfall: (params?: MRRWaterfallParams) =>
+            this.get<Res<'getMRRWaterfall'>>('/v1/analytics/mrr/waterfall', params),
+        revenueByGeography: () =>
+            this.get<Res<'getRevenueByGeography'>>('/v1/analytics/revenue-by-geography'),
+        revenueByPlan: () => this.get<Res<'getRevenueByPlan'>>('/v1/analytics/revenue-by-plan'),
+        /** ARPA / ARPU / LTV. */
+        unitEconomics: () => this.get<Res<'getUnitEconomics'>>('/v1/analytics/unit-economics'),
+        /** Aggregate metered usage by dimension. */
+        usage: () => this.get<Res<'getUsageStats'>>('/v1/analytics/usage'),
+        /** Ask a natural-language analytics question; the answer carries the query it ran. */
+        ask: (data: Body<'askAnalytics'>) =>
+            this.post<Res<'askAnalytics'>>('/v1/analytics/ask', data),
     };
 
     public ledger = {
@@ -818,6 +986,49 @@ export class Recurso {
             this.get<Res<'listLedgerAccounts'>>('/v1/ledger/accounts', params),
         entries: (params?: LedgerEntriesParams) =>
             this.get<Res<'listLedgerEntries'>>('/v1/ledger/entries', params),
+        /** One posted double-entry journal entry, with both legs' accounts. */
+        transaction: (id: string) =>
+            this.get<Res<'getLedgerTransaction'>>(`/v1/ledger/transactions/${id}`),
+        /** Every account's debit/credit totals and the double-entry invariant. */
+        trialBalance: (params?: TrialBalanceParams) =>
+            this.get<Res<'getTrialBalance'>>('/v1/ledger/trial-balance', params),
+        /** Deferred Revenue movement for a month: opening + added - released = closing. */
+        deferredRollforward: (params: PeriodParams) =>
+            this.get<Res<'getDeferredRollforward'>>('/v1/ledger/deferred-rollforward', params),
+        /** The general ledger as CSV text; scope with entity_id and/or month+year. */
+        export: (params?: LedgerExportParams) => this.getText('/v1/ledger/export', params),
+    };
+
+    /** Month-end close, reconciliation, and revenue recognition. */
+    public finance = {
+        /** One read-only close artifact for a month, with a `ready_to_close` verdict. */
+        closePack: (params: PeriodParams) =>
+            this.get<Res<'getClosePack'>>('/v1/finance/close-pack', params),
+        /** On-demand invoice-vs-ledger reconciliation; nothing is persisted. */
+        reconciliation: () => this.get<Res<'runReconciliation'>>('/v1/finance/reconciliation'),
+        /** Run a reconciliation AND record it to the audit trail. */
+        recordReconciliation: () =>
+            this.post<Res<'recordReconciliation'>>('/v1/finance/reconciliation/runs'),
+        /** Recorded reconciliation runs, newest first (limit ≤ 200). */
+        reconciliationRuns: (params?: { limit?: number }) =>
+            this.get<Res<'listReconciliationRuns'>>('/v1/finance/reconciliation/runs', params),
+        /** One recorded run with its persisted discrepancy rows. */
+        reconciliationRun: (id: string) =>
+            this.get<Res<'getReconciliationRun'>>(`/v1/finance/reconciliation/runs/${id}`),
+        /** Revenue recognition report for a month. */
+        revRecReport: (params: PeriodParams) =>
+            this.get<Res<'getRevRecReport'>>('/v1/finance/revrec/report', params),
+        /** Recognition curve: recognized vs still-scheduled revenue by month. */
+        revenueWaterfall: () =>
+            this.get<Res<'getRevenueWaterfall'>>('/v1/finance/revrec/waterfall'),
+    };
+
+    /** Indian GST statutory returns, assembled from finalized invoices. */
+    public india = {
+        /** GSTR-1 outward-supply return (readable sections + GSTN `gov_schema`). */
+        gstr1: (params: PeriodParams) => this.get<Res<'getGSTR1'>>('/v1/india/gstr1', params),
+        /** GSTR-3B summary return. */
+        gstr3b: (params: PeriodParams) => this.get<Res<'getGSTR3B'>>('/v1/india/gstr3b', params),
     };
 
     public organizations = {
@@ -864,6 +1075,18 @@ export class Recurso {
             ),
         disconnect: (id: string) =>
             this.del<Res<'disconnectAccounting'>>(`/v1/accounting/connections/${id}`),
+        /** Start the browser OAuth flow for QuickBooks/Xero; returns `{auth_url}` to redirect to. */
+        connect: (provider: string) =>
+            this.post<Res<'connectAccountingProvider'>>(`/v1/accounting/connect/${provider}`),
+        /**
+         * The OAuth redirect target (exchanges `code` for tokens, then 302s
+         * back to the dashboard). Normally hit by the browser, not the SDK.
+         */
+        oauthCallback: (provider: string, params: AccountingCallbackParams) =>
+            this.get<Res<'accountingOAuthCallback'>>(
+                `/v1/accounting/callback/${provider}`,
+                params,
+            ),
         /** Trigger a sync to connected accounting systems. */
         sync: () => this.post<Res<'triggerAccountingSync'>>('/v1/accounting/sync'),
         syncStatus: () => this.get<Res<'getAccountingSyncStatus'>>('/v1/accounting/sync/status'),
@@ -954,5 +1177,193 @@ export class Recurso {
             ),
         deleteStep: (stepId: string) =>
             this.del<Res<'deleteDunningCampaignStep'>>(`/v1/dunning-campaigns/steps/${stepId}`),
+    };
+
+    /** Customer consent records (recurring billing, marketing, ToS, ...). */
+    public consents = {
+        record: (data: Body<'recordConsent'>) =>
+            this.post<Res<'recordConsent'>>('/v1/consents', data),
+        revoke: (consentId: string) =>
+            this.post<Res<'revokeConsent'>>('/v1/consents/revoke', { consent_id: consentId }),
+    };
+
+    /** Tenant settings: tax identities, e-invoicing, branding, MCP opt-in. */
+    public settings = {
+        getEUEInvoice: () => this.get<Res<'getEUEInvoiceConfig'>>('/v1/settings/eu-einvoice'),
+        updateEUEInvoice: (data: Body<'updateEUEInvoiceConfig'>) =>
+            this.put<Res<'updateEUEInvoiceConfig'>>('/v1/settings/eu-einvoice', data),
+        getGST: () => this.get<Res<'getGSTConfig'>>('/v1/settings/gst'),
+        updateGST: (data: Body<'updateGSTConfig'>) =>
+            this.put<Res<'updateGSTConfig'>>('/v1/settings/gst', data),
+        /** Validate a 15-character GSTIN. */
+        validateGSTIN: (gstin: string) =>
+            this.post<Res<'validateGSTIN'>>('/v1/settings/gst/validate', { gstin }),
+        getInvoiceBranding: () =>
+            this.get<Res<'getInvoiceBranding'>>('/v1/settings/invoice-branding'),
+        updateInvoiceBranding: (data: Body<'updateInvoiceBranding'>) =>
+            this.put<Res<'updateInvoiceBranding'>>('/v1/settings/invoice-branding', data),
+        /** IRP (Indian e-invoicing) configuration; credentials are write-only. */
+        getIRP: () => this.get<Res<'getIRPConfig'>>('/v1/settings/irp'),
+        updateIRP: (data: Body<'updateIRPConfig'>) =>
+            this.put<Res<'updateIRPConfig'>>('/v1/settings/irp', data),
+        testIRP: () => this.post<Res<'testIRPConnection'>>('/v1/settings/irp/test'),
+        getMCP: () => this.get<Res<'getMCPSettings'>>('/v1/settings/mcp'),
+        /** Upsert the MCP opt-in; `tier3_enabled` unlocks money-path agent tools. */
+        updateMCP: (data: Body<'updateMCPSettings'>) =>
+            this.put<Res<'updateMCPSettings'>>('/v1/settings/mcp', data),
+        /** Per-state US sales-tax liability for a filing period. */
+        taxLiability: (params?: TaxLiabilityParams) =>
+            this.get<Res<'getTaxLiabilityReport'>>('/v1/settings/tax/liability', params),
+        getTaxNexus: (params?: { entity_id?: string }) =>
+            this.get<Res<'getTaxNexus'>>('/v1/settings/tax/nexus', params),
+        /** Replace the declared US nexus states. */
+        setTaxNexus: (data: Body<'setTaxNexus'>) =>
+            this.put<Res<'setTaxNexus'>>('/v1/settings/tax/nexus', data),
+        /** Per-state economic-nexus proximity for a year; crossings auto-establish nexus. */
+        taxNexusStatus: (params?: { year?: number }) =>
+            this.get<Res<'getTaxNexusStatus'>>('/v1/settings/tax/nexus/status', params),
+        getTaxRegistrations: () =>
+            this.get<Res<'getTaxRegistrations'>>('/v1/settings/tax/registrations'),
+        setTaxRegistrations: (data: Body<'setTaxRegistrations'>) =>
+            this.put<Res<'setTaxRegistrations'>>('/v1/settings/tax/registrations', data),
+        /** US tax identity (W-9). */
+        getUSTax: () => this.get<Res<'getUSTaxConfig'>>('/v1/settings/tax/us'),
+        updateUSTax: (data: Body<'updateUSTaxConfig'>) =>
+            this.put<Res<'updateUSTaxConfig'>>('/v1/settings/tax/us', data),
+    };
+
+    /** Team members of the tenant (owner/admin/member). */
+    public users = {
+        list: () => this.get<Res<'listUsers'>>('/v1/users'),
+        /** Add a teammate with a password chosen by the admin. */
+        create: (data: Body<'createUser'>) => this.post<Res<'createUser'>>('/v1/users', data),
+        /** Invite a teammate by email; they set their own password via a one-time link. */
+        invite: (data: Body<'inviteUser'>) =>
+            this.post<Res<'inviteUser'>>('/v1/users/invite', data),
+        updateRole: (id: string, role: 'owner' | 'admin' | 'member') =>
+            this.patch<Res<'updateUserRole'>>(`/v1/users/${id}`, { role }),
+        delete: (id: string) => this.del<Res<'deleteUser'>>(`/v1/users/${id}`),
+    };
+
+    /** API keys for programmatic access; the raw key is returned only on create. */
+    public apiKeys = {
+        list: () => this.get<Res<'listAPIKeys'>>('/v1/developer/keys'),
+        create: (data?: Body<'createAPIKey'>) =>
+            this.post<Res<'createAPIKey'>>('/v1/developer/keys', data),
+        revoke: (id: string) => this.del<Res<'revokeAPIKey'>>(`/v1/developer/keys/${id}`),
+    };
+
+    /**
+     * Session-scoped auth management (TOTP MFA, active sessions). These
+     * require a logged-in dashboard session cookie, not an API key.
+     */
+    public auth = {
+        /** Begin TOTP enrolment: returns the secret + provisioning URI. */
+        mfaSetup: () => this.post<Res<'mfaSetup'>>('/v1/auth/mfa/setup'),
+        /** Confirm the TOTP code, enable MFA, and receive one-time backup codes. */
+        mfaVerify: (code: string) => this.post<Res<'mfaVerify'>>('/v1/auth/mfa/verify', { code }),
+        /** Disable MFA after verifying a TOTP or unused backup code. */
+        mfaDisable: (code: string) =>
+            this.post<Res<'mfaDisable'>>('/v1/auth/mfa/disable', { code }),
+        sessions: () => this.get<Res<'listSessions'>>('/v1/auth/sessions'),
+        /** Log out everywhere else: revoke every session except the current one. */
+        revokeOtherSessions: () => this.del<Res<'revokeOtherSessions'>>('/v1/auth/sessions'),
+        revokeSession: (id: string) =>
+            this.del<Res<'revokeSession'>>(`/v1/auth/sessions/${id}`),
+    };
+
+    /** The tenant's SAML SSO connection (owner/admin only to change). */
+    public sso = {
+        get: () => this.get<Res<'getSSOConnection'>>('/v1/sso/connection'),
+        /** Provide `idp_metadata_xml`, or `idp_entity_id` + `idp_sso_url` + `idp_certificate`. */
+        upsert: (data: Body<'upsertSSOConnection'>) =>
+            this.put<Res<'upsertSSOConnection'>>('/v1/sso/connection', data),
+        delete: () => this.del<Res<'deleteSSOConnection'>>('/v1/sso/connection'),
+    };
+
+    /** Bring-your-own payment-gateway credentials (Stripe/Razorpay), sealed at rest. */
+    public gatewayConnections = {
+        list: () => this.get<Res<'listGatewayConnections'>>('/v1/gateway-connections'),
+        /** Store (or replace) the tenant's own gateway keys; secrets are write-only. */
+        create: (data: Body<'createGatewayConnection'>) =>
+            this.post<Res<'createGatewayConnection'>>('/v1/gateway-connections', data),
+        delete: (provider: 'stripe' | 'razorpay') =>
+            this.del<Res<'deleteGatewayConnection'>>(`/v1/gateway-connections/${provider}`),
+        /** Set the webhook signing secret in place (the connection id stays stable). */
+        setWebhookSecret: (provider: 'stripe' | 'razorpay', webhookSecret: string) =>
+            this.put<Res<'setGatewayWebhookSecret'>>(
+                `/v1/gateway-connections/${provider}/webhook-secret`,
+                { webhook_secret: webhookSecret },
+            ),
+    };
+
+    /** Bring-your-own tax (TaxJar/Avalara), CRM (HubSpot) and storage (S3) integrations. */
+    public integrationConnections = {
+        list: () => this.get<Res<'listIntegrationConnections'>>('/v1/integration-connections'),
+        /** Store (or replace) credentials for a (category, provider); secrets are write-only. */
+        create: (data: Body<'createIntegrationConnection'>) =>
+            this.post<Res<'createIntegrationConnection'>>('/v1/integration-connections', data),
+        delete: (category: 'tax' | 'crm' | 'storage', provider: string) =>
+            this.del<Res<'deleteIntegrationConnection'>>(
+                `/v1/integration-connections/${category}/${provider}`,
+            ),
+    };
+
+    public crm = {
+        /** Push this workspace's customers to its connected CRM now. */
+        sync: () => this.post<Res<'syncCRMNow'>>('/v1/crm/sync'),
+    };
+
+    /** Migration from Stripe / Chargebee / RevenueCat exports: preview → compare → commit. */
+    public migration = {
+        /** Dry-run: what a commit would create, link, skip, or refuse. No side effects. */
+        previewStripe: (data: Body<'previewStripeImport'>) =>
+            this.post<Res<'previewStripeImport'>>('/v1/import/stripe/preview', data),
+        /** Compare gate: prove the migration ties out before cut-over. */
+        compareStripe: (data: Body<'compareStripeImport'>) =>
+            this.post<Res<'compareStripeImport'>>('/v1/import/stripe/compare', data),
+        commitStripe: (data: Body<'commitStripeImport'>) =>
+            this.post<Res<'commitStripeImport'>>('/v1/import/stripe/commit', data),
+        previewChargebee: (data: Body<'previewChargebeeImport'>) =>
+            this.post<Res<'previewChargebeeImport'>>('/v1/import/chargebee/preview', data),
+        compareChargebee: (data: Body<'compareChargebeeImport'>) =>
+            this.post<Res<'compareChargebeeImport'>>('/v1/import/chargebee/compare', data),
+        commitChargebee: (data: Body<'commitChargebeeImport'>) =>
+            this.post<Res<'commitChargebeeImport'>>('/v1/import/chargebee/commit', data),
+        previewRevenueCat: (data: Body<'previewRevenueCatImport'>) =>
+            this.post<Res<'previewRevenueCatImport'>>('/v1/import/revenuecat/preview', data),
+        compareRevenueCat: (data: Body<'compareRevenueCatImport'>) =>
+            this.post<Res<'compareRevenueCatImport'>>('/v1/import/revenuecat/compare', data),
+        commitRevenueCat: (data: Body<'commitRevenueCatImport'>) =>
+            this.post<Res<'commitRevenueCatImport'>>('/v1/import/revenuecat/commit', data),
+        /** Stored Compare runs, newest first (limit ≤ 200). */
+        compareReports: (params?: { limit?: number }) =>
+            this.get<Res<'listCompareReports'>>('/v1/import/compare-reports', params),
+        compareReport: (id: string) =>
+            this.get<Res<'getCompareReport'>>(`/v1/import/compare-reports/${id}`),
+        /** The printable Compare receipt as HTML. */
+        compareReportDocument: (id: string) =>
+            this.getText(`/v1/import/compare-reports/${id}/document`),
+    };
+
+    /** Recurso Cloud managed-billing status for this tenant. */
+    public billing = {
+        /** The managed-cloud plan catalog. */
+        plans: () => this.get<Res<'getBillingPlans'>>('/v1/billing/plans'),
+        /** The tenant's own billing/trial status. */
+        status: () => this.get<Res<'getBillingStatus'>>('/v1/billing/status'),
+    };
+
+    /** Unversioned platform endpoints: build info, metrics, waitlist. */
+    public system = {
+        /** Build version and gateway mode (public). */
+        version: () => this.get<Res<'getVersion'>>('/version'),
+        /** Prometheus text-format metrics (optionally METRICS_TOKEN-gated). */
+        metrics: () => this.getText('/metrics'),
+        /** Founder-only cross-tenant funnel snapshot (FOUNDER_TOKEN-gated). */
+        platformMetrics: () => this.get<Res<'getPlatformMetrics'>>('/platform/metrics'),
+        /** Join the Recurso Cloud waitlist (public, rate-limited). */
+        joinWaitlist: (data: Body<'joinWaitlist'>) =>
+            this.post<Res<'joinWaitlist'>>('/waitlist', data),
     };
 }

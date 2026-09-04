@@ -1,12 +1,12 @@
 {
     "name": "recurso",
-    "version": "1.8.0",
+    "version": "1.9.0",
     "description": "Official Node.js SDK for Recurso Billing",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "scripts": {
         "build": "tsc",
-        "generate": "openapi-typescript ../recur-so/cmd/api/openapi.yaml -o src/schema.d.ts",
+        "generate": "openapi-typescript ../recurso/cmd/api/openapi.yaml -o src/schema.d.ts",
         "typecheck": "tsc --noEmit -p tsconfig.test.json",
         "test": "vitest run",
         "test:coverage": "vitest run --coverage",
