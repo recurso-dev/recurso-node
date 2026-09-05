@@ -2602,7 +2602,7 @@ export interface paths {
         put?: never;
         /**
          * Manually write off an invoice as uncollectible
-         * @description Operator-initiated write-off (status change only, no ledger leg — matching the automated path). Only flips a still-collectible invoice.
+         * @description Operator-initiated write-off: flips a still-collectible (open or past_due) invoice to uncollectible and posts the write-off reversal (still-deferred portion DR Deferred Revenue / CR AR, already-recognized portion DR Bad Debt Expense / CR AR, tax DR Tax Payable / CR AR) so AR stops carrying money that will never arrive. Any other status → 404.
          */
         post: operations["collectionsMarkUncollectible"];
         delete?: never;
@@ -5578,7 +5578,7 @@ export interface components {
             net_amount?: number;
             /**
              * Format: int64
-             * @description Tax on a positive net (0 for credits).
+             * @description Tax netted across both sides: GST collected on the new-plan charge (at the new plan's rate/HSN) minus GST reversed on the old-plan credit (at the old plan's rate/HSN). Positive on an upgrade, negative on a downgrade credit.
              */
             tax_amount?: number;
             /**
@@ -6351,6 +6351,8 @@ export interface components {
             managed_by?: "scheduler" | "worker" | "campaign";
             /** @description Status of the latest payment attempt (ACH), if one exists. */
             attempt_status?: string;
+            /** @description True when an operator has paused automated dunning on the invoice. */
+            dunning_paused?: boolean;
         };
         /** @description One stage of the recovery funnel, in the reporting currency. */
         CollectionsBucket: {
@@ -7066,8 +7068,11 @@ export interface components {
             /** Format: uuid */
             customer_id?: string;
             reason?: string;
-            /** @enum {string} */
-            status?: "open" | "resolved";
+            /**
+             * @description open, resolved (closed in the customer's favor) or rejected (reviewed and declined).
+             * @enum {string}
+             */
+            status?: "open" | "resolved" | "rejected";
             /** @description Admin resolution note; null while open. */
             note?: string | null;
             /** Format: date-time */
@@ -9175,6 +9180,7 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
@@ -11993,7 +11999,7 @@ export interface operations {
                 /** @description Rows to skip, for paging past the clamp. */
                 offset?: number;
                 /** @description Filter by dispute status. */
-                status?: "open" | "resolved";
+                status?: "open" | "resolved" | "rejected";
             };
             header?: never;
             path?: never;
@@ -12057,27 +12063,50 @@ export interface operations {
             };
             cookie?: never;
         };
+        /** @description Optional; an empty body accepts the dispute with no note and no credit. */
         requestBody?: {
             content: {
                 "application/json": {
+                    /**
+                     * @description accept (default) closes the dispute in the customer's favor (status → resolved); reject declines it (status → rejected).
+                     * @default accept
+                     * @enum {string}
+                     */
+                    outcome?: "accept" | "reject";
                     /** @description Optional admin resolution note. */
                     note?: string;
+                    /**
+                     * @description Accept only. When true, issues an adjustment credit note (reason dispute_resolution) against the disputed invoice before the dispute is closed. Ignored on reject.
+                     * @default false
+                     */
+                    issue_credit?: boolean;
+                    /**
+                     * Format: int64
+                     * @description Credit amount in minor units. 0 or omitted means the invoice's amount still due (falling back to its total). Must not exceed the invoice total (today that violation surfaces as 500, not 400; 400 covers only a malformed body, an unknown outcome, or a negative credit_amount).
+                     */
+                    credit_amount?: number;
                 };
             };
         };
         responses: {
-            /** @description Dispute resolved. */
+            /** @description Dispute resolved. Action-shape `{status}` object (not the Dispute resource, not wrapped in data); credit_note is present only when a credit was issued. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        /** @example resolved */
-                        status?: string;
+                        /**
+                         * @example resolved
+                         * @enum {string}
+                         */
+                        status?: "resolved" | "rejected";
+                        /** @description Present only when issue_credit was true on accept. */
+                        credit_note?: components["schemas"]["CreditNote"];
                     };
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
         };
