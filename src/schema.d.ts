@@ -2663,7 +2663,7 @@ export interface paths {
         post?: never;
         /**
          * Revoke an API key
-         * @description Soft-deactivates the key. Authentication filters on the active flag, so a revoked key stops working immediately and cannot be restored. Owner/admin only for dashboard sessions.
+         * @description Soft-deactivates the key; it cannot be restored. Authentication caches a verified key for up to five minutes, so a revoked key can keep working for that long before requests start failing with 401. Owner/admin only for dashboard sessions.
          */
         delete: operations["revokeAPIKey"];
         options?: never;
@@ -17556,14 +17556,15 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Connection removed. */
+            /** @description Connection removed. Action-shape `{status}` object, not wrapped in data. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": {
-                        message?: string;
+                        /** @enum {string} */
+                        status?: "removed";
                     };
                 };
             };
